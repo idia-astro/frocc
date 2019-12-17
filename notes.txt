@@ -1,0 +1,4 @@
+Notes
+=====
+- which python path? /opt/anaconda3/bin/python3?
+- Units: all Hz and Jy/beam?
