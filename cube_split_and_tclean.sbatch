@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array 70-90%20
+#SBATCH --array 1-2%2
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
@@ -11,4 +11,4 @@
 
 cat /etc/hostname
 
-/usr/bin/singularity exec /data/exp_soft/containers/casameer-5.5.0-149-bdsf.simg "casa" --nogui --nologger --logfile logs/cube_split_and_tclean-${SLURM_ARRAY_JOB_ID}-${SLURM_ARRAY_TASK_ID}.casa -c cube_split_and_tclean.py --slurmJobId ${SLURM_ARRAY_TASK_ID}
+/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python cube_split_and_tclean.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}

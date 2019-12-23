@@ -2,3 +2,5 @@ Notes
 =====
 - which python path? /opt/anaconda3/bin/python3?
 - Units: all Hz and Jy/beam?
+- casatasks logging filepath not working.
+- first channel fails because "spw range is not valid". This doesn't make sense since I check for this during the setup scripts.

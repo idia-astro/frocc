@@ -3,23 +3,15 @@
 ------------------------------------------------------------------------------
 Beta code
 
-This script runs CASA split and tclean using a slurm sbatch array job.
+This script runs CASA split and tclean started through a slurm sbatch array job.
 The purpose is to generate images for each frequency channel which channel
-width is set by FREQ_RESOLUTION_Hz.
-
-In the first step check_validity() the script figures out which ranges of the
-whole bandwidth hold data and therefore should be considered for imaging.
-
-create_directories() creates the needed directories. Please note that the
-"logs" directory needs to be created before running the script because the
-slurm sbatch script expects this already.
+width is set by `outputChanBandwidth`.
 
 call_split() splits out the visibilities for each channel (of width
-FREQ_RESOLUTION_Hz) into the directory DIR_VIS.
+`outputChanBandwidth`) into the directory `dirVis`.
 
 In the last step call_tclean() the images (casa and .fits) are created in
-DIR_IMAGES. The setting need for tclean need to be changed in call_tclean()
-directly.
+`dirImages`.
 
 After all the images are created you may want to run cube_buildcube.{py,sbatch}
 
@@ -43,6 +35,12 @@ import argparse
 import os
 from logging import info, error
 
+import click
+
+import casatasks 
+
+from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -61,23 +59,27 @@ SEPERATOR = "-----------------------------------------------------------------"
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def call_split(args):
-    startFreq = str(START_FREQ_Hz + FREQ_RESOLUTION_Hz * (args.slurmJobId - 1))
-    stopFreq = str(START_FREQ_Hz + FREQ_RESOLUTION_Hz * args.slurmJobId)
+def call_split(channelNumber, conf):
+    '''
+    '''
+    info("Starting CASA split for channelNumber: {0}".format(channelNumber))
+
+    startFreq = str(int(conf.input.startFreq) + int(conf.input.outputChanBandwidth) * (channelNumber - 1))
+    stopFreq = str(int(conf.input.startFreq) + int(conf.input.outputChanBandwidth) * channelNumber)
     spw = "*:" + startFreq + "~" + stopFreq + "Hz"
     # generate outputMS filename from INPUT_MS filename
     outputMS = (
-        DIR_VIS
-        + os.path.splitext(os.path.basename(INPUT_MS))[0]
-        + ".chan"
-        + str(args.slurmJobId).zfill(3)
+        conf.env.dirVis
+        + os.path.splitext(os.path.basename(conf.input.inputMS))[0]
+        + conf.env.markerChannel
+        + str(channelNumber).zfill(3)
         + ".ms"
     )
-    split(
-        vis=INPUT_MS,
+    casatasks.split(
+        vis=conf.input.inputMS,
         outputvis=outputMS,
-        observation=OBSERVATION,
-        field=FIELD,
+        observation=conf.input.observation,
+        field=conf.input.field,
         spw=spw,
         keepmms=False,
         datacolumn="data",
@@ -86,45 +88,65 @@ def call_split(args):
     return outputMS
 
 
-def call_tclean(args, inputMS):
+def call_tclean(channelInputMS, conf):
     '''
     '''
-    imagename = DIR_IMAGES + os.path.basename(inputMS)
-    tclean(
-        vis=inputMS,
+    info("Starting CASA tclean for input file: {0}".format(channelInputMS))
+    imagename = conf.env.dirImages + os.path.basename(channelInputMS)
+    casatasks.tclean(
+        vis=channelInputMS,
         imagename=imagename,
-        niter=500,
-        gain=0.1,
-        deconvolver="clark",
-        threshold=0.00001,
-        imsize=500,
-        cell=1.5,
-        gridder="wproject",
-        wprojplanes=-1,
-        specmode="mfs",
-        spw="",
-        stokes="IQUV",
-        weighting="briggs",
-        robust=0.0,
-        pblimit=-1,
+        niter=conf.input.niter,
+        gain=conf.input.gain,
+        deconvolver=conf.input.deconvolver,
+        threshold=conf.input.threshold,
+        imsize=conf.input.imsize,
+        cell=conf.input.cell,
+        gridder=conf.input.gridder,
+        wprojplanes=conf.input.wprojplanes,
+        specmode=conf.input.specmode,
+        spw=conf.input.spw,
+        stokes=conf.input.stokes,
+        weighting=conf.input.weighting,
+        robust=conf.input.robust,
+        pblimit=conf.input.pblimit,
         # mask=args.cleanmask, usemask='user',
-        restoration=True,
-        restoringbeam=["18arcsec"],
+        restoration=conf.input.restoration,
+        restoringbeam=[conf.input.restoringbeam],
     )
     # export to .fits file
     outname = imagename + ".image"
     outfits = outname + ".fits"
-    exportfits(imagename=outname, fitsimage=outfits, overwrite=True)
+    casatasks.exportfits(imagename=outname, fitsimage=outfits, overwrite=True)
 
 
-def main(args):
-    if check_validity(args):
-        create_directories()
-        splitOutputMS = call_split(args)
-        call_tclean(args, splitOutputMS)
-    else:
-        # TODO: tell which freq
-        info("No data at this frequency.")
+def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
+    '''
+    '''
+    return conf.data.predictedOutputChannels[int(slurmArrayTaskId)-1]
+
+
+@click.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True,
+))
+#@click.argument('--inputMS', required=False)
+@click.pass_context
+def main(ctx):
+
+    args = DotMap(get_dict_from_click_args(ctx.args))
+    info("Scripts arguments: {0}".format(args))
+
+    conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+    info("Scripts config: {0}".format(conf))
+
+    channelNumber = get_channelNumber_from_slurmArrayTaskId(args.slurmArrayTaskId, conf)
+
+    # TODO: help: re-definition of casalog not working.
+    casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
+
+    splitOutputMS = call_split(channelNumber, conf)
+    call_tclean(splitOutputMS, conf)
 
 
 if __name__ == "__main__":
@@ -134,10 +156,7 @@ if __name__ == "__main__":
     info("STARTING script.")
     info(SEPERATOR)
 
-    args = parse_args()
-    info("Scripts arguments: {0}".format(args))
-
-    main(args)
+    main()
 
     TIMESTAMP_END = datetime.datetime.now()
     TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START

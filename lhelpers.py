@@ -81,3 +81,23 @@ def get_config_in_dot_notation(templateFilename="default_config.template", confi
                 setattr(getattr(dot, section), key, str(value))
     return dot
 
+
+# TODO build decorator for main timer
+# def main_timer(func):
+#    def func_wrapper(name):
+#     TIMESTAMP_START = datetime.datetime.now()
+#     info(SEPERATOR)
+#     info(SEPERATOR)
+#     info("STARTING script.")
+#     info(SEPERATOR)
+# 
+# 
+#     main()
+# 
+#     TIMESTAMP_END = datetime.datetime.now()
+#     TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
+#     info(SEPERATOR)
+#     info("END script in {0}".format(str(TIMESTAMP_DELTA)))
+#     info(SEPERATOR)
+#     info(SEPERATOR)
+#    return func_wrapper

@@ -11,11 +11,35 @@ observation = 0
 # The field ID
 field = 0
 
+
+
+# tclean
+# # # # #
+
 # clean mask for CASA tclean
-cleanmask = None
+mask = None
+niter = 500
+gain = 0.1
+deconvolver = "clark"
+threshold = 0.00001
+imsize = 500
+cell = 1.5
+gridder = "wproject"
+wprojplanes = -1
+specmode = "mfs"
+spw = ""
+stokes = "IQUV"
+weighting = "briggs"
+robust = 0.0
+pblimit = -1
+# mask = args.cleanmask, usemask = 'user'
+restoration = True
+restoringbeam = "18arcsec"
 
 [env]
 dirLogs = "logs/"
 dirImages = "images/"
 dirVis = "vis/"
 dirList = ["logs/", "images/", "vis/"]
+
+markerChannel = ".chan"

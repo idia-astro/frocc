@@ -45,6 +45,16 @@ def get_all_freqsList(conf):
     return allFreqsList
 
 
+def get_fieldnames(conf):
+    """
+    Get all the frequencies of all the sub-channels in each spw.
+    TODO: put all the msmd in one fuction so that the object is created only once.
+    """
+    info("""Opening file to read the fieldnames: {0}""".format(conf.input.inputMS))
+    msmd = msmetadata()
+    msmd.open(msfile=conf.input.inputMS, maxcache=10000)
+    return msmd.fieldnames()
+
 def get_unflagged_channelIndexBoolList(conf):
     '''
     '''
@@ -76,7 +86,6 @@ def get_unflagged_channelList(conf):
     return channelList
 
 
-#channelIndexBoolList = get_unflagged_channelIndexBoolList(args)
 # HELPER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -137,6 +146,7 @@ def main(ctx):
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
     data['predictedOutputChannels'] = get_unflagged_channelList(conf)
+    data['fieldnames'] = get_fieldnames(conf)
     append_user_config_data(data)
 
     create_directories(conf)
