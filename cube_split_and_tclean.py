@@ -45,34 +45,6 @@ from logging import info, error
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# INPUT
-
-# TODO: marry this with argparse
-# Important: go to call_tclean to change the tclean parameters
-
-# INPUT_MS: The input measurement data set to generate the data cube from
-INPUT_MS = "1538856059_sdp_l0.full_1284.full_pol.J0521+1638.noXf.ms"
-
-# START_FREQ_Hz in [ Hz ]: everything below this frequency gets flagged
-START_FREQ_Hz = 890e6
-
-# FREQ_RESOLUTION_Hz in [ Hz ]: final channel width of the cube data
-FREQ_RESOLUTION_Hz = 2.5e6
-
-# OBSERVATION: The observation ID
-OBSERVATION = "0"
-
-# FIELD: The field ID
-FIELD = "0"
-
-# FILEPATH_CLEANMASK: clean mask for CASA tclean TODO
-FILEPATH_CLEANMASK = ""
-
-# INPUT
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
 
 logging.basicConfig(
@@ -80,94 +52,13 @@ logging.basicConfig(
 )
 SEPERATOR = "-----------------------------------------------------------------"
 
-DIR_LOGS = "logs/"
-DIR_IMAGES = "images/"
-DIR_VIS = "vis/"
-LIST_DIRECTORIES = [DIR_LOGS, DIR_IMAGES, DIR_VIS]
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# HELPER
-
-def get_all_freqsList():
-    """
-    Get all the frequencies of all the sub-channels in each spw.
-    """
-    allFreqsList = np.array([])
-    msmd.open(INPUT_MS)
-    #print(msmd.chanfreqs(1) + msmd.chanwidths(1))
-    for spw in range(0, msmd.nspw()):
-        allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) + msmd.chanwidths(spw)))
-        allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) - msmd.chanwidths(spw)))
-    return allFreqsList
-
-
-def get_unflagged_channelIndexBoolList():
-    '''
-    '''
-    allFreqsList = get_all_freqsList()
-    # A list of indexes for all cube channels that will hold data.
-    # Expl: ( 901e6 [Hz] - 890e6 [Hz] ) // 2.5e6 [Hz] = 4 [listIndex]
-    channelIndexList = [
-        int((freq - START_FREQ_Hz) // FREQ_RESOLUTION_Hz) for freq in allFreqsList
-    ]
-    # remove negative values
-    channelIndexList = np.array(channelIndexList)
-    channelIndexList = channelIndexList[channelIndexList >= 0]
-    maxChannelIndex = max(channelIndexList)
-    # True if cube channel holds data, otherwise False
-    channelIndexBoolList = []
-    for ii in range(0, maxChannelIndex + 1):
-        if ii in channelIndexList:
-            channelIndexBoolList.append(True)
-        else:
-            channelIndexBoolList.append(False)
-    return channelIndexBoolList
-
-
-def parse_args():
-    '''
-    Parse arguments into this script.
-    '''
-
-    # TODO: more argparse
-    parser = argparse.ArgumentParser(
-        #prog=sys.argv[0],
-        description="Create spectro-polarimetric output MS from input MS. Runs CASA split and tclean.",
-    )
-
-    parser.add_argument(
-        "--slurmJobId", required=True, type=int, help="SLURM_JOB_ID, has to start with a value greater 0."
-    )
-
-    args, unknown = parser.parse_known_args()
-
-    return args
-
-
-channelIndexBoolList = get_unflagged_channelIndexBoolList()
-# HELPER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-def check_validity(args):
-    """
-    """
-    return channelIndexBoolList[args.slurmJobId - 1]
-
-
-def create_directories():
-    """
-    """
-    for directory in LIST_DIRECTORIES:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
 
 def call_split(args):
@@ -226,7 +117,7 @@ def call_tclean(args, inputMS):
     exportfits(imagename=outname, fitsimage=outfits, overwrite=True)
 
 
-def process(args):
+def main(args):
     if check_validity(args):
         create_directories()
         splitOutputMS = call_split(args)
@@ -246,7 +137,7 @@ if __name__ == "__main__":
     args = parse_args()
     info("Scripts arguments: {0}".format(args))
 
-    process(args)
+    main(args)
 
     TIMESTAMP_END = datetime.datetime.now()
     TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START

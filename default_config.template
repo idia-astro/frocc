@@ -1,0 +1,21 @@
+[input]
+# start frquency in [Hz]. All channels below this frequencies will be ignored
+startFreq = 890e6
+
+# Channel width in [Hz] of the final data cube.
+outputChanBandwidth = 2.5e6
+
+# The observation ID
+observation = 0
+
+# The field ID
+field = 0
+
+# clean mask for CASA tclean
+cleanmask = None
+
+[env]
+dirLogs = "logs/"
+dirImages = "images/"
+dirVis = "vis/"
+dirList = ["logs/", "images/", "vis/"]
