@@ -81,6 +81,12 @@ def get_config_in_dot_notation(templateFilename="default_config.template", confi
                 setattr(getattr(dot, section), key, str(value))
     return dot
 
+def get_channelNumber_from_filename(filename, marker, digits=3):
+    print(filename, marker)
+    markerChannelPositionEnd = int(filename.find(marker)) + len(marker)
+    highestChannel = filename[markerChannelPositionEnd:markerChannelPositionEnd+digits]
+    return highestChannel.zfill(digits)
+
 
 # TODO build decorator for main timer
 # def main_timer(func):

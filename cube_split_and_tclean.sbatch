@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --array 1-2%2
+#SBATCH --array 1-30%30
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1

@@ -4,3 +4,5 @@ Notes
 - Units: all Hz and Jy/beam?
 - casatasks logging filepath not working.
 - first channel fails because "spw range is not valid". This doesn't make sense since I check for this during the setup scripts.
+- channelNumbers are hardcoded to 3 digits, 001-999, this could be more generic.
+- np.nan become 0 in cube even if `dummy_data = np.ones(dummy_dims, dtype=np.float32) * np.nan`

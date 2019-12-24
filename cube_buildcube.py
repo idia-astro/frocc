@@ -32,19 +32,14 @@ import sys
 import numpy as np
 from astropy.io import fits
 
+from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation
+from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # INPUT
 # !!! Also have a look at the QUICKFIX section
 
-# directory with fits images per channel for Stokes IQUV.
-DIR_IMAGES = "images/"
-
-PATHLIST_STOKES_IQUV = sorted(glob(DIR_IMAGES + "*image.fits"))
-PATHLIST_STOKES_FIRSTDATA = PATHLIST_STOKES_IQUV[0]
-
-OBJECT_NAME = os.path.basename(PATHLIST_STOKES_FIRSTDATA.split(".")[0])
-CUBE_NAME = "cube." + OBJECT_NAME + ".fits"
 
 # FLAGGING
 FLAG_METHOD = "threshold" # threshold, ior (iterative outlier rejection)
@@ -61,7 +56,7 @@ IOR_LIMIT_SIGMA = 4 # n sigma over median
 
 # Outputs a statistics file with estimates for RMS noise in Stokes I and V
 WRITE_STATISTICS_FILE = False
-FILEPATH_STATISTICS = CUBE_NAME.replace(".fits", ".statistics.tab")
+#FILEPATH_STATISTICS = CUBE_NAME.replace(".fits", ".statistics.tab")
 
 # INPUT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -80,28 +75,7 @@ MARKER_CHANNEL = ".chan"
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# QUICKFIX
-# If some channels are already flagged one might endup with gaps in the channel
-# number of the tclean output fits files
-
-HIGHEST_CHANNEL = 335
-for i in range(1, HIGHEST_CHANNEL + 1):
-    channelMarker = MARKER_CHANNEL + "{:03d}".format(i) + "."
-    if channelMarker in ".".join(PATHLIST_STOKES_IQUV):
-        pass
-    else:
-        missing = re.sub(r'\.chan[0-9]{3}\.', channelMarker, PATHLIST_STOKES_IQUV[0])
-        PATHLIST_STOKES_IQUV.append(missing)
-
-PATHLIST_STOKES_IQUV = sorted(PATHLIST_STOKES_IQUV)
-
-#print(PATHLIST_STOKESI)
-
-# QUICKFIX
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def get_and_add_custom_header(header):
+def get_and_add_custom_header(header, zdim, conf):
     """
     Gets header from fits file and updates the cube header.
 
@@ -118,17 +92,18 @@ def get_and_add_custom_header(header):
 
     """
     info(SEPERATOR)
-    info("Getting header for data cube from: %s", PATHLIST_STOKES_FIRSTDATA)
-    with fits.open(PATHLIST_STOKES_FIRSTDATA, memmap=True) as hud:
+    lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.fits"))[0]
+    info("Getting header for data cube from: %s", lowestChannelFitsfile)
+    with fits.open(lowestChannelFitsfile, memmap=True) as hud:
         header = hud[0].header
         # Optional: Update the header.
-        header["OBJECT"] = OBJECT_NAME
-        header["NAXIS3"] = len(PATHLIST_STOKES_IQUV)
+        header["OBJECT"] = str(conf.data.fieldnames)
+        header["NAXIS3"] = int(zdim)
         header["CTYPE3"] = ("FREQ", "")
     return header
 
 
-def make_empty_image():
+def make_empty_image(conf):
     """
     Generate an empty dummy fits data cube.
 
@@ -136,9 +111,12 @@ def make_empty_image():
     resulting data cube can exceed the machine's RAM.
 
     """
+    channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+    lowestChannelFitsfile = channelFitsfileList[0]
+    highestChannelFitsfile = channelFitsfileList[-1]
     info(SEPERATOR)
-    info("Getting image dimension for data cube from: %s", PATHLIST_STOKES_FIRSTDATA)
-    with fits.open(PATHLIST_STOKES_FIRSTDATA, memmap=True) as hud:
+    info("Getting image dimension for data cube from: %s", lowestChannelFitsfile)
+    with fits.open(lowestChannelFitsfile, memmap=True) as hud:
         xdim, ydim = np.squeeze(hud[0].data).shape[-2:]
     info("X-dimension: %s", xdim)
     info("Y-dimension: %s", ydim)
@@ -146,8 +124,9 @@ def make_empty_image():
     info(
         "Getting channel dimension Z for data cube from number of entries in PATHLIST_STOKESI."
     )
-    zdim = len(PATHLIST_STOKES_IQUV)
-    info("Z-dimension: %s", zdim)
+    # parse highest channel from fits file to get cube z dimension
+    zdim = int(get_channelNumber_from_filename(highestChannelFitsfile, conf.env.markerChannel))
+    info("Z-dimension: {0}".format(zdim))
 
     info("Assuming full Stokes for dimension W.")
     wdim = 4
@@ -158,15 +137,17 @@ def make_empty_image():
     # create header
 
     dummy_dims = tuple(1 for d in dims)
-    dummy_data = np.zeros(dummy_dims, dtype=np.float32)
+    dummy_data = np.ones(dummy_dims, dtype=np.float32) * np.nan
     hdu = fits.PrimaryHDU(data=dummy_data)
 
     header = hdu.header
-    header = get_and_add_custom_header(header)
+    header = get_and_add_custom_header(header, zdim, conf)
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
 
-    header.tofile(CUBE_NAME, overwrite=True)
+    cubeName = "cube." +  os.path.basename(lowestChannelFitsfile.split(".")[0]) + ".fits"
+
+    header.tofile(cubeName, overwrite=True)
 
     # create full-sized zero image
 
@@ -179,7 +160,9 @@ def make_empty_image():
     block_size = 2880
     data_size = block_size * ((data_size // block_size) + 1)
 
-    with open(CUBE_NAME, "rb+") as f:
+    cubeName = "cube." +  os.path.basename(lowestChannelFitsfile.split(".")[0]) + ".fits"
+
+    with open(cubeName, "rb+") as f:
         f.seek(header_size + data_size - 1)
         f.write(b"\0")
 
@@ -322,27 +305,28 @@ def get_flaggedIndexList_by_ior(rmsList):
     return outlierIndexList
 
 
-def fill_cube_with_images():
+def fill_cube_with_images(conf):
     """
     Fills the empty data cube with fits data.
 
 
     """
+    # TODO: make this less ambigious cube.*.fits
+    cubeName = glob("cube.*.fits")[0]
     info(SEPERATOR)
-    info("Opening data cube: %s", CUBE_NAME)
-    hudCube = fits.open(CUBE_NAME, memmap=True, mode="update")
+    info("Opening data cube: %s", cubeName)
+    print(cubeName)
+    hudCube = fits.open(cubeName, memmap=True, mode="update")
     dataCube = hudCube[0].data
 
     rmsDict = {}
     rmsDict["rmsI"] = []
     rmsDict["rmsV"] = []
-    for i, filePathFits in enumerate(PATHLIST_STOKES_IQUV):
+    channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+    for channelFitsfile in channelFitsfileList:
+        idx = int(get_channelNumber_from_filename(channelFitsfile, conf.env.markerChannel)) - 1
         quickSwitch = False
-        print(i)
-        print(PATHLIST_STOKES_IQUV[i])
-        #print("---------------")
-        #print(PATHLIST_STOKES_IQUV)
-        info("Trying to open fits file: %s", PATHLIST_STOKES_IQUV[i])
+        info("Trying to open fits file: {0}".format(channelFitsfile))
         # Switch
         stokesVflag = False
 
@@ -350,18 +334,18 @@ def fill_cube_with_images():
         # Try to open file. If channel doesn't exists flag channel
        # try:
         try:
-            hud = fits.open(PATHLIST_STOKES_IQUV[i], memmap=True)
+            hud = fits.open(channelFitsfile, memmap=True)
 
 
             stokesV = hud[0].data[3, 0, :, :]
             checkedArray, std = check_rms(stokesV)
             rmsDict["rmsV"].append(std)
-            dataCube[3, i, :, :] = checkedArray
+            dataCube[3, idx, :, :] = checkedArray
             if np.isnan(np.sum(checkedArray)):
                 stokesVflag = True
             quickSwitch = True
         except:
-            info("Flagging channel, file not found: %s", PATHLIST_STOKES_IQUV[i])
+            info("Flagging channel, file not found: %s", channelFitsfile)
             stokesVflag = True
             rmsDict["rmsV"].append(0)
 
@@ -369,13 +353,13 @@ def fill_cube_with_images():
             stokesI = hud[0].data[0, 0, :, :]
             std = get_std_via_mad(stokesI)
             rmsDict["rmsI"].append(std)
-            dataCube[0, i, :, :] = stokesI
+            dataCube[0, idx, :, :] = stokesI
 
             stokesQ = hud[0].data[1, 0, :, :]
-            dataCube[1, i, :, :] = stokesQ
+            dataCube[1, idx, :, :] = stokesQ
 
             stokesU = hud[0].data[2, 0, :, :]
-            dataCube[2, i, :, :] = stokesU
+            dataCube[2, idx, :, :] = stokesU
 
         if stokesVflag:
             info(
@@ -383,10 +367,10 @@ def fill_cube_with_images():
                 str(round(rmsDict["rmsV"][-1] * 1e6, 2)),
                 str(round(RMS_THRESHOLD * 1e6, 3)),
             )
-            dataCube[0, i, :, :] = np.nan
-            dataCube[1, i, :, :] = np.nan
-            dataCube[2, i, :, :] = np.nan
-            dataCube[3, i, :, :] = np.nan
+            dataCube[0, idx, :, :] = np.nan
+            dataCube[1, idx, :, :] = np.nan
+            dataCube[2, idx, :, :] = np.nan
+            dataCube[3, idx, :, :] = np.nan
 
         if quickSwitch:
             hud.close()
@@ -397,22 +381,27 @@ def fill_cube_with_images():
         write_statistics_file(rmsDict)
 
 
+def main():
+    conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+    info("Scripts config: {0}".format(conf))
+
+    make_empty_image(conf)
+    fill_cube_with_images(conf)
+
+
+
 if __name__ == "__main__":
-    # start timestamp
-    info(SEPERATOR)
     TIMESTAMP_START = datetime.datetime.now()
-    info("START script at: %s", TIMESTAMP_START)
+    info(SEPERATOR)
+    info(SEPERATOR)
+    info("STARTING script.")
     info(SEPERATOR)
 
-    # call methods
-    make_empty_image()
-    fill_cube_with_images()
-    #testList = [978, 10, 10, 10, 2, 37, 10, np.nan, 100, 300, 10, 10, 10 ,10 ,10, 20, 21, 10, 10, 10]
-    #get_flaggedIndexList_by_ior(testList)
+    main()
 
-    # end timestamp
     TIMESTAMP_END = datetime.datetime.now()
     TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
     info(SEPERATOR)
-    info("END script at %s in %s", str(TIMESTAMP_END), str(TIMESTAMP_DELTA))
+    info("END script in {0}".format(str(TIMESTAMP_DELTA)))
+    info(SEPERATOR)
     info(SEPERATOR)
