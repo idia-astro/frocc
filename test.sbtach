@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --array=1-30%30
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=10GB
+#SBATCH --job-name=testestest
+#SBATCH --output=/logs/NoName-%A-%a.out
+#SBATCH --error=/logs/NoName-%A-%a.err
+#SBATCH --partition=Main
+#SBATCH --hi=3
+
+cat /etc/hostname
+
+echo hi

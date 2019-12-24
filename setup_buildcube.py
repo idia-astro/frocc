@@ -5,7 +5,7 @@ import os
 from logging import info, error
 
 # own helpers
-from lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation
+from lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file
 
 # need to be instaled in container. Right now linkt with $PYTHONPATH
 import click
@@ -124,6 +124,24 @@ def create_directories(conf):
             os.makedirs(directory)
 
 
+def write_all_sbatch_files(conf):
+    '''
+    TODO: make this shorter and better
+    '''
+    # split and tclean
+    basename = "cube_split_and_tclean"
+    filename = basename + ".sbatch"
+    info("Writing sbtach file: {0}".format(filename))
+    sbatchDict = {
+            'array': "1-" + str(len(conf.data.predictedOutputChannels)) + "%30",
+            'output': "/logs/" + basename + "-%A-%a.out",
+            'error': "/logs/" + basename + "-%A-%a.err",
+            }
+    command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python cube_split_and_tclean.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    write_sbtach_file(filename, command, sbatchDict)
+
+
+@main_timer
 @click.command(context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True,
@@ -148,23 +166,13 @@ def main(ctx):
     data['predictedOutputChannels'] = get_unflagged_channelList(conf)
     data['fieldnames'] = get_fieldnames(conf)
     append_user_config_data(data)
+    # reload conf after data got appended to user conf
+    conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
     create_directories(conf)
 
+    write_all_sbatch_files(conf)
+
 
 if __name__ == '__main__':
-    TIMESTAMP_START = datetime.datetime.now()
-    info(SEPERATOR)
-    info(SEPERATOR)
-    info("STARTING script.")
-    info(SEPERATOR)
-
-
     main()
-
-    TIMESTAMP_END = datetime.datetime.now()
-    TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
-    info(SEPERATOR)
-    info("END script in {0}".format(str(TIMESTAMP_DELTA)))
-    info(SEPERATOR)
-    info(SEPERATOR)

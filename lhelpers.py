@@ -3,7 +3,16 @@ Convinience functions and classes.
 '''
 
 import configparser
+import datetime
 import ast
+import logging
+import functools
+from logging import info, error
+
+logging.basicConfig(
+    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
+)
+SEPERATOR = "-----------------------------------------------------------------"
 
 
 class DotMap(dict):
@@ -82,28 +91,58 @@ def get_config_in_dot_notation(templateFilename="default_config.template", confi
     return dot
 
 def get_channelNumber_from_filename(filename, marker, digits=3):
-    print(filename, marker)
     markerChannelPositionEnd = int(filename.find(marker)) + len(marker)
     highestChannel = filename[markerChannelPositionEnd:markerChannelPositionEnd+digits]
     return highestChannel.zfill(digits)
 
 
-# TODO build decorator for main timer
-# def main_timer(func):
-#    def func_wrapper(name):
-#     TIMESTAMP_START = datetime.datetime.now()
-#     info(SEPERATOR)
-#     info(SEPERATOR)
-#     info("STARTING script.")
-#     info(SEPERATOR)
-# 
-# 
-#     main()
-# 
-#     TIMESTAMP_END = datetime.datetime.now()
-#     TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
-#     info(SEPERATOR)
-#     info("END script in {0}".format(str(TIMESTAMP_DELTA)))
-#     info(SEPERATOR)
-#     info(SEPERATOR)
-#    return func_wrapper
+def main_timer(func):
+    '''
+    '''
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        TIMESTAMP_START = datetime.datetime.now()
+        info(SEPERATOR)
+        info(SEPERATOR)
+        info("STARTING script.")
+        info(SEPERATOR)
+
+        # TODO: debug, click eats half of the decorator message
+        print(func)
+        func(*args, **kwargs)
+
+        TIMESTAMP_END = datetime.datetime.now()
+        TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
+        info(SEPERATOR)
+        info("END script in {0}".format(str(TIMESTAMP_DELTA)))
+        info(SEPERATOR)
+        info(SEPERATOR)
+    return wrapper
+
+
+def write_sbtach_file(filename, command, sbatchDict={}):
+    defaultDict = {
+            'array': "1-30%30",
+            'nodes': 1,
+            'ntasks-per-node': 1,
+            'cpus-per-task': 1,
+            'mem': "10GB",
+            'job-name': "NoName",
+            'output': "/logs/NoName-%A-%a.out",
+            'error': "/logs/NoName-%A-%a.err",
+            'partition': "Main",
+            }
+    if sbatchDict:
+        defaultDict.update(sbatchDict)
+    with open(filename, 'w') as f:
+        sbatchScript = "#!/bin/bash"
+        for key, value in defaultDict.items():
+            sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
+
+        sbatchScript += "\n\ncat /etc/hostname" 
+        sbatchScript += "\n\n" + command
+        f.write(sbatchScript)
+
+write_sbtach_file("test.sbtach", "echo hi", {'job-name': "testestest", 'hi': 3})
+
+

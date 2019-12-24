@@ -315,7 +315,6 @@ def fill_cube_with_images(conf):
     cubeName = glob("cube.*.fits")[0]
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
-    print(cubeName)
     hudCube = fits.open(cubeName, memmap=True, mode="update")
     dataCube = hudCube[0].data
 
