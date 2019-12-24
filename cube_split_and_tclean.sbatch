@@ -4,7 +4,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=10GB
-#SBATCH --job-name=NoName
+#SBATCH --job-name=cube_split_and_tclean
 #SBATCH --output=/logs/cube_split_and_tclean-%A-%a.out
 #SBATCH --error=/logs/cube_split_and_tclean-%A-%a.err
 #SBATCH --partition=Main

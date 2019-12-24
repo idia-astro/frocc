@@ -132,6 +132,7 @@ def write_sbtach_file(filename, command, sbatchDict={}):
             'error': "/logs/NoName-%A-%a.err",
             'partition': "Main",
             }
+    # update default with provided dict if not empty
     if sbatchDict:
         defaultDict.update(sbatchDict)
     with open(filename, 'w') as f:

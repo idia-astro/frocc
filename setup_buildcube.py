@@ -134,10 +134,26 @@ def write_all_sbatch_files(conf):
     info("Writing sbtach file: {0}".format(filename))
     sbatchDict = {
             'array': "1-" + str(len(conf.data.predictedOutputChannels)) + "%30",
+            'job-name': basename,
             'output': "/logs/" + basename + "-%A-%a.out",
             'error': "/logs/" + basename + "-%A-%a.err",
             }
-    command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python cube_split_and_tclean.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    write_sbtach_file(filename, command, sbatchDict)
+
+    # buildcube
+    basename = "cube_buildcube"
+    filename = basename + ".sbatch"
+    info("Writing sbtach file: {0}".format(filename))
+    sbatchDict = {
+            'array': "1-1%1",
+            'job-name': basename,
+            'output': "/logs/" + basename + "-%A-%a.out",
+            'error': "/logs/" + basename + "-%A-%a.err",
+            'cpus-per-task': 16,
+            'mem': "200GB",
+            }
+    command = '/usr/bin/singularity exec /data/exp_soft/containers/python-3.6.img python3 ' + basename + '.py'
     write_sbtach_file(filename, command, sbatchDict)
 
 
@@ -159,7 +175,6 @@ def main(ctx):
 
     # data: values derived from the measurement set like valid channels
     data = {}
-
     write_user_config_input(args)
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
