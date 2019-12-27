@@ -39,20 +39,7 @@ from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # INPUT
 
-# FLAGGING
-FLAG_METHOD = "threshold" # threshold, ior (iterative outlier rejection)
-# flag data that is above the RMS noise estimate from Stokes V. Set is to a high
-# value for no flagging
-RMS_THRESHOLD = 20000000  # in [uJy/beam]
-RMS_THRESHOLD = RMS_THRESHOLD * 1e-6  # to [Jy/beam], don't change this!
-
-# Set a list of channel indexes that should be flagged manually, channel index
-LIST_MANUAL_FLAG_BY_INDEX = []
-
-IOR_LIMIT_SIGMA = 4 # n sigma over median
-
 # Outputs a statistics file with estimates for RMS noise in Stokes I and V
-WRITE_STATISTICS_FILE = True
 # TODO: get generic filename
 FILEPATH_STATISTICS = "cube.statistics.tab"
 
@@ -214,7 +201,7 @@ def get_std_via_mad(npArray):
 
 def check_rms(npArray):
     """
-    Check if the Numpy Array is below RMS_THRESHOLD and above 1e-6 uJy/beam.
+    Check if the Numpy Array is above 1e-6 uJy/beam.
 
     If the Numpy Array is not within the range it gets assigned to not a number
     (np.nan).
@@ -231,7 +218,7 @@ def check_rms(npArray):
 
     """
     std = get_std_via_mad(npArray)
-    if (std > RMS_THRESHOLD or std == 0):
+    if (std < 1e6):
         npArray = np.nan
         std = np.nan
     return [npArray, std]
@@ -262,46 +249,32 @@ def write_statistics_file(statsDict):
         writer.writerows(csvData)
 
 
-def flag_channel_by_indexList(indexList, dataCube):
-    """
-    Flaggs alls channels in fits data cube by indexList. TODO: write better
-
-
-    """
-    indexList + LIST_MANUAL_FLAG_BY_INDEX
-    for i in indexList:
-        print(i)
-        info("Fagging channel index %s, which corresponds to the following file (and Stokes QUV respectively): %s", i, PATHLIST_STOKESI[i])
-        dataCube[0, i, :, :] = np.nan
-        dataCube[1, i, :, :] = np.nan
-        dataCube[2, i, :, :] = np.nan
-        dataCube[3, i, :, :] = np.nan
-    return dataCube
-
-
-def get_flaggedList_by_indexList(indexList):
-    flaggedList = []
-    for i, filePathFits in enumerate(PATHLIST_STOKESI):
-        if i in indexList:
-            flaggedList.append(True)
-        else:
-            flaggedList.append(False)
-    return flaggedList
-
-
-def get_flaggedIndexList_by_ior(rmsList):
-    outlierIndexList = []
-    outlierSwitch = True
-    while outlierSwitch:
-        outlierSwitch = False
-        for i, rms in enumerate(rmsList):
-            medianRMS = np.nanmedian(rmsList)
-            nanStdOfRMS = np.nanstd(rmsList)
-            if rms > (medianRMS + IOR_LIMIT_SIGMA * nanStdOfRMS):
-                outlierIndexList.append(i)
-                rmsList[i] = np.nan
-                outlierSwitch = True
-    return outlierIndexList
+# TODO: put into different script
+# def flag_channel_by_indexList(indexList, dataCube):
+#     """
+#     Flaggs alls channels in fits data cube by indexList. TODO: write better
+# 
+# 
+#     """
+#     indexList + LIST_MANUAL_FLAG_BY_INDEX
+#     for i in indexList:
+#         print(i)
+#         info("Fagging channel index %s, which corresponds to the following file (and Stokes QUV respectively): %s", i, PATHLIST_STOKESI[i])
+#         dataCube[0, i, :, :] = np.nan
+#         dataCube[1, i, :, :] = np.nan
+#         dataCube[2, i, :, :] = np.nan
+#         dataCube[3, i, :, :] = np.nan
+#     return dataCube
+# 
+# 
+# def get_flaggedList_by_indexList(indexList):
+#     flaggedList = []
+#     for i, filePathFits in enumerate(PATHLIST_STOKESI):
+#         if i in indexList:
+#             flaggedList.append(True)
+#         else:
+#             flaggedList.append(False)
+#     return flaggedList
 
 
 def fill_cube_with_images(conf):
@@ -365,9 +338,8 @@ def fill_cube_with_images(conf):
 
         elif stokesVflag:
             info(
-                "Stokes V RMS noise of %s [uJy/beam] 0 or above RMS_THRESHOLD of %s [uJy/beam]. Flagging Stokes IQUV.",
+                "Stokes V RMS noise of below 1 [uJy/beam]. Flagging Stokes IQUV.",
                 str(round(rmsDict["rmsV"][-1] * 1e6, 2)),
-                str(round(RMS_THRESHOLD * 1e6, 3)),
             )
             dataCube[0, idx, :, :] = np.nan
             dataCube[1, idx, :, :] = np.nan
@@ -381,8 +353,7 @@ def fill_cube_with_images(conf):
 
 
     hudCube.close()
-    if WRITE_STATISTICS_FILE:
-        write_statistics_file(rmsDict)
+    write_statistics_file(rmsDict)
 
 
 def main():
