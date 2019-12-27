@@ -12,6 +12,7 @@ from scipy.stats import linregress
 from scipy import optimize
 
 from scipy import *
+from lhelper import get_std_via_mad
 
 IOR_LIMIT_SIGMA = 4 # n sigma over median
 
@@ -35,50 +36,6 @@ mpl.rcParams['axes.titlesize'] = 26
 sns.set_style("ticks")
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def get_mad(a, axis=None):
-    """
-    Compute *Median Absolute Deviation* of an array along given axis.
-
-    from: https://informatique-python.readthedocs.io/fr/latest/Exercices/mad.html
-
-    Parameters
-    ----------
-    a: numpy.array
-       The numpy array of which MAD gets calculated from
-
-    Returns
-    -------
-    mad: float
-       MAD from a
-
-    """
-    # Median along given axis, but *keeping* the reduced axis so that
-    # result can still broadcast against a.
-    med = np.nanmedian(a, axis=axis, keepdims=True)
-    mad = np.nanmedian(np.absolute(a - med), axis=axis)  # MAD along given axis
-    return mad
-
-
-def get_std_via_mad(npArray):
-    """
-    Estimate standard deviation via Median Absolute Deviation.
-
-
-    Parameters
-    ----------
-    npArray: numpy.array
-       The numpy array of which the Standard Deviation gets calculated from
-
-    Returns
-    -------
-    std: float
-       Standard Deviation from MAD
-
-    """
-    mad = get_mad(npArray)
-    std = 1.4826 * mad
-    return std
 
 
 def format_legend(item):

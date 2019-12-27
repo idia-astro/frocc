@@ -32,7 +32,7 @@ import sys
 import numpy as np
 from astropy.io import fits
 
-from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation
+from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad
 from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 
@@ -152,52 +152,6 @@ def make_empty_image(conf):
         f.write(b"\0")
 
 
-def get_mad(a, axis=None):
-    """
-    Compute *Median Absolute Deviation* of an array along given axis.
-
-    from: https://informatique-python.readthedocs.io/fr/latest/Exercices/mad.html
-
-    Parameters
-    ----------
-    a: numpy.array
-       The numpy array of which MAD gets calculated from
-
-    Returns
-    -------
-    mad: float
-       MAD from a
-
-    """
-    # Median along given axis, but *keeping* the reduced axis so that
-    # result can still broadcast against a.
-    med = np.nanmedian(a, axis=axis, keepdims=True)
-    mad = np.nanmedian(np.absolute(a - med), axis=axis)  # MAD along given axis
-    return mad
-
-
-def get_std_via_mad(npArray):
-    """
-    Estimate standard deviation via Median Absolute Deviation.
-
-
-    Parameters
-    ----------
-    npArray: numpy.array
-       The numpy array of which the Standard Deviation gets calculated from
-
-    Returns
-    -------
-    std: float
-       Standard Deviation from MAD
-
-    """
-    mad = get_mad(npArray)
-    std = 1.4826 * mad
-    # std = round(std, 3)
-    info("Got std via mad [uJy/beam]: %s ", round(std * 1e6, 2))
-    return std
-
 
 def check_rms(npArray):
     """
@@ -218,7 +172,8 @@ def check_rms(npArray):
 
     """
     std = get_std_via_mad(npArray)
-    if (std < 1e6):
+    print(std)
+    if (std < 1e-6):
         npArray = np.nan
         std = np.nan
     return [npArray, std]
@@ -338,8 +293,7 @@ def fill_cube_with_images(conf):
 
         elif stokesVflag:
             info(
-                "Stokes V RMS noise of below 1 [uJy/beam]. Flagging Stokes IQUV.",
-                str(round(rmsDict["rmsV"][-1] * 1e6, 2)),
+                "Stokes V RMS noise of {0} is below below 1 [uJy/beam]. Flagging Stokes IQUV.".format(round(rmsDict["rmsV"][-1] * 1e6, 2))
             )
             dataCube[0, idx, :, :] = np.nan
             dataCube[1, idx, :, :] = np.nan
