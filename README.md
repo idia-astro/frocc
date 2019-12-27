@@ -11,9 +11,10 @@ initialize the config file
 2. adjust config default_config.txt with settings found in default_config.template. Don't change default_config.template, it contains the default fallback values.
 3. run cube_split_and_tclean.sbatch and wait for it to finish
 4. run cube_buildcube.sbatch
+5. run cube_ior_flagging.sbatch
 
 TODO
 ====
 - optimisations 
-- statistics
-- flagging
+- more statistics
+- cleanup

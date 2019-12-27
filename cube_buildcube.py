@@ -172,7 +172,6 @@ def check_rms(npArray):
 
     """
     std = get_std_via_mad(npArray)
-    print(std)
     if (std < 1e-6):
         npArray = np.nan
         std = np.nan
@@ -189,7 +188,7 @@ def write_statistics_file(statsDict):
        Dictionary with lists for Stokes I and V rms noise
 
     """
-    legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]"]
+    legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", FILEPATH_STATISTICS)
     with open(FILEPATH_STATISTICS, "w") as csvFile:
         writer = csv.writer(csvFile, delimiter="\t")
@@ -200,7 +199,8 @@ def write_statistics_file(statsDict):
             rmsI = round(statsDict["rmsI"][ii] * 1e6, 4)
             rmsV = round(statsDict["rmsV"][ii] * 1e6, 4)
             maxI = round(statsDict["maxI"][ii] * 1e6, 4)
-            csvData.append([chanNo, freq, rmsI, rmsV, maxI])
+            flagged = statsDict["flagged"][ii]
+            csvData.append([chanNo, freq, rmsI, rmsV, maxI, flagged])
         writer.writerows(csvData)
 
 
@@ -252,6 +252,7 @@ def fill_cube_with_images(conf):
     rmsDict["rmsI"] = []
     rmsDict["rmsV"] = []
     rmsDict["maxI"] = []
+    rmsDict["flagged"] = []
     channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
     for channelFitsfile in channelFitsfileList:
         idx = int(get_channelNumber_from_filename(channelFitsfile, conf.env.markerChannel)) - 1
@@ -283,6 +284,7 @@ def fill_cube_with_images(conf):
             std = get_std_via_mad(stokesI)
             rmsDict["rmsI"].append(std)
             rmsDict["maxI"].append(np.max(stokesI))
+            rmsDict["flagged"].append(False)
             dataCube[0, idx, :, :] = stokesI
 
             stokesQ = hud[0].data[1, 0, :, :]
@@ -301,6 +303,7 @@ def fill_cube_with_images(conf):
             dataCube[3, idx, :, :] = np.nan
             rmsDict["rmsI"].append(np.nan)
             rmsDict["maxI"].append(np.nan)
+            rmsDict["flagged"].append(True)
 
         if quickSwitch:
             hud.close()

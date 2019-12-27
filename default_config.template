@@ -40,6 +40,7 @@ restoringbeam = "18arcsec"
 dirLogs = "logs/"
 dirImages = "images/"
 dirVis = "vis/"
-dirList = ["logs/", "images/", "vis/"]
+dirPlots = "plots/"
+dirList = ["logs/", "images/", "vis/", "plots/"]
 
 markerChannel = ".chan"
