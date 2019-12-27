@@ -126,7 +126,7 @@ def write_sbtach_file(filename, command, sbatchDict={}):
             'nodes': 1,
             'ntasks-per-node': 1,
             'cpus-per-task': 1,
-            'mem': "10GB",
+            'mem': "20GB",
             'job-name': "NoName",
             'output': "/logs/NoName-%A-%a.out",
             'error': "/logs/NoName-%A-%a.err",

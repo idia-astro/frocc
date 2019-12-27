@@ -135,8 +135,8 @@ def write_all_sbatch_files(conf):
     sbatchDict = {
             'array': "1-" + str(len(conf.data.predictedOutputChannels)) + "%30",
             'job-name': basename,
-            'output': "/logs/" + basename + "-%A-%a.out",
-            'error': "/logs/" + basename + "-%A-%a.err",
+            'output': "logs/" + basename + "-%A-%a.out",
+            'error': "logs/" + basename + "-%A-%a.err",
             }
     command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, sbatchDict)
@@ -148,8 +148,8 @@ def write_all_sbatch_files(conf):
     sbatchDict = {
             'array': "1-1%1",
             'job-name': basename,
-            'output': "/logs/" + basename + "-%A-%a.out",
-            'error': "/logs/" + basename + "-%A-%a.err",
+            'output': "logs/" + basename + "-%A-%a.out",
+            'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 16,
             'mem': "200GB",
             }

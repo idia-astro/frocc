@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=10GB
+#SBATCH --mem=20GB
 #SBATCH --job-name=testestest
 #SBATCH --output=/logs/NoName-%A-%a.out
 #SBATCH --error=/logs/NoName-%A-%a.err

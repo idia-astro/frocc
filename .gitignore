@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# own Lennart
+__pycache__/
+testing.*
+*casa*
+images/*
+vis/*
+logs/*
+cube.*

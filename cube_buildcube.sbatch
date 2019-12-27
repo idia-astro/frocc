@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=200GB
 #SBATCH --job-name=cube_buildcube
-#SBATCH --output=/logs/cube_buildcube-%A-%a.out
-#SBATCH --error=/logs/cube_buildcube-%A-%a.err
+#SBATCH --output=logs/cube_buildcube-%A-%a.out
+#SBATCH --error=logs/cube_buildcube-%A-%a.err
 #SBATCH --partition=Main
 
 cat /etc/hostname

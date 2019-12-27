@@ -38,8 +38,6 @@ from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # INPUT
-# !!! Also have a look at the QUICKFIX section
-
 
 # FLAGGING
 FLAG_METHOD = "threshold" # threshold, ior (iterative outlier rejection)
@@ -49,14 +47,14 @@ RMS_THRESHOLD = 20000000  # in [uJy/beam]
 RMS_THRESHOLD = RMS_THRESHOLD * 1e-6  # to [Jy/beam], don't change this!
 
 # Set a list of channel indexes that should be flagged manually, channel index
-# corresponds to the index in PATHLIST_STOKES{I,Q,U,V}.
 LIST_MANUAL_FLAG_BY_INDEX = []
 
 IOR_LIMIT_SIGMA = 4 # n sigma over median
 
 # Outputs a statistics file with estimates for RMS noise in Stokes I and V
-WRITE_STATISTICS_FILE = False
-#FILEPATH_STATISTICS = CUBE_NAME.replace(".fits", ".statistics.tab")
+WRITE_STATISTICS_FILE = True
+# TODO: get generic filename
+FILEPATH_STATISTICS = "cube.statistics.tab"
 
 # INPUT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -233,8 +231,9 @@ def check_rms(npArray):
 
     """
     std = get_std_via_mad(npArray)
-    if (std > RMS_THRESHOLD):
+    if (std > RMS_THRESHOLD or std == 0):
         npArray = np.nan
+        std = np.nan
     return [npArray, std]
 
 
@@ -248,18 +247,18 @@ def write_statistics_file(statsDict):
        Dictionary with lists for Stokes I and V rms noise
 
     """
-    legendList = ["rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "frequency [MHz]"]
+    legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]"]
     info("Writing statistics file: %s", FILEPATH_STATISTICS)
     with open(FILEPATH_STATISTICS, "w") as csvFile:
         writer = csv.writer(csvFile, delimiter="\t")
         csvData = [legendList]
-        for i, entry in enumerate(statsDict["rmsI"]):
-            rmsI = round(statsDict["rmsI"][i] * 1e6, 4)
-            rmsV = round(statsDict["rmsV"][i] * 1e6, 4)
-            flagged = statsDict['flagged'][i] # TODO: fix this
-            maxI = round(statsDict["maxI"][i] * 1e6, 4)
-            freq = round(statsDict["freq"][i] * 1e-6, 4)
-            csvData.append([rmsI, rmsV, freq])
+        for ii, entry in enumerate(statsDict["rmsI"]):
+            chanNo = statsDict["chanNo"][ii]
+            freq = round(statsDict["freq"][ii] * 1e-6, 4)
+            rmsI = round(statsDict["rmsI"][ii] * 1e6, 4)
+            rmsV = round(statsDict["rmsV"][ii] * 1e6, 4)
+            maxI = round(statsDict["maxI"][ii] * 1e6, 4)
+            csvData.append([chanNo, freq, rmsI, rmsV, maxI])
         writer.writerows(csvData)
 
 
@@ -315,15 +314,20 @@ def fill_cube_with_images(conf):
     cubeName = glob("cube.*.fits")[0]
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
-    hudCube = fits.open(cubeName, memmap=True, mode="update")
+    # TODO: debug: if ignore_missing_end is not true I get an error.
+    hudCube = fits.open(cubeName, memmap=True, ignore_missing_end=True, mode="update")
     dataCube = hudCube[0].data
 
     rmsDict = {}
+    rmsDict["chanNo"] = []
+    rmsDict["freq"] = []
     rmsDict["rmsI"] = []
     rmsDict["rmsV"] = []
+    rmsDict["maxI"] = []
     channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
     for channelFitsfile in channelFitsfileList:
         idx = int(get_channelNumber_from_filename(channelFitsfile, conf.env.markerChannel)) - 1
+        rmsDict['chanNo'].append(idx)
         quickSwitch = False
         info("Trying to open fits file: {0}".format(channelFitsfile))
         # Switch
@@ -331,27 +335,26 @@ def fill_cube_with_images(conf):
 
         info(SEPERATOR)
         # Try to open file. If channel doesn't exists flag channel
-       # try:
         try:
             hud = fits.open(channelFitsfile, memmap=True)
-
-
+            rmsDict['freq'].append(hud[0].header["CRVAL3"])
             stokesV = hud[0].data[3, 0, :, :]
             checkedArray, std = check_rms(stokesV)
             rmsDict["rmsV"].append(std)
             dataCube[3, idx, :, :] = checkedArray
-            if np.isnan(np.sum(checkedArray)):
+            if np.isnan(np.sum(checkedArray)) or std==0:
                 stokesVflag = True
             quickSwitch = True
         except:
-            info("Flagging channel, file not found: %s", channelFitsfile)
+            info("Flagging channel, can not open file: %s", channelFitsfile)
             stokesVflag = True
-            rmsDict["rmsV"].append(0)
+            rmsDict["rmsV"].append(np.nan)
 
         if not stokesVflag:
             stokesI = hud[0].data[0, 0, :, :]
             std = get_std_via_mad(stokesI)
             rmsDict["rmsI"].append(std)
+            rmsDict["maxI"].append(np.max(stokesI))
             dataCube[0, idx, :, :] = stokesI
 
             stokesQ = hud[0].data[1, 0, :, :]
@@ -360,7 +363,7 @@ def fill_cube_with_images(conf):
             stokesU = hud[0].data[2, 0, :, :]
             dataCube[2, idx, :, :] = stokesU
 
-        if stokesVflag:
+        elif stokesVflag:
             info(
                 "Stokes V RMS noise of %s [uJy/beam] 0 or above RMS_THRESHOLD of %s [uJy/beam]. Flagging Stokes IQUV.",
                 str(round(rmsDict["rmsV"][-1] * 1e6, 2)),
@@ -370,6 +373,8 @@ def fill_cube_with_images(conf):
             dataCube[1, idx, :, :] = np.nan
             dataCube[2, idx, :, :] = np.nan
             dataCube[3, idx, :, :] = np.nan
+            rmsDict["rmsI"].append(np.nan)
+            rmsDict["maxI"].append(np.nan)
 
         if quickSwitch:
             hud.close()

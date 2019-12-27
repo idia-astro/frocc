@@ -3,10 +3,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=10GB
+#SBATCH --mem=20GB
 #SBATCH --job-name=cube_split_and_tclean
-#SBATCH --output=/logs/cube_split_and_tclean-%A-%a.out
-#SBATCH --error=/logs/cube_split_and_tclean-%A-%a.err
+#SBATCH --output=logs/cube_split_and_tclean-%A-%a.out
+#SBATCH --error=logs/cube_split_and_tclean-%A-%a.err
 #SBATCH --partition=Main
 
 cat /etc/hostname
