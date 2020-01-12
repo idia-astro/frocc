@@ -13,7 +13,7 @@ from astropy.io import fits
 from glob import glob
 
 from scipy import *
-from lhelpers import get_std_via_mad, get_config_in_dot_notation
+from lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer
 from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from logging import info, error
 import subprocess
@@ -235,10 +235,11 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
     hudCube.close()
 
     info("Generating HDF5 file from: {0}".format(cubeName))
-    command = ['/carta_share/hdf_convert/run_hdf_converter', cubeName]
+    command = [conf.env.hdf5Converter, cubeName]
     subprocess.run(command)
 
 
+@main_timer
 def main():
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     statsDict = get_dict_from_tabFile(FILEPATH_STATISTICS)

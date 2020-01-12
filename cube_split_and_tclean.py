@@ -40,7 +40,7 @@ import click
 import casatasks 
 
 from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation
+from lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -79,7 +79,7 @@ def call_split(channelNumber, conf):
         vis=conf.input.inputMS,
         outputvis=outputMS,
         observation=conf.input.observation,
-        field=conf.input.field,
+        field=str(conf.input.field),
         spw=spw,
         keepmms=False,
         datacolumn="data",
@@ -132,6 +132,7 @@ def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
 ))
 #@click.argument('--inputMS', required=False)
 @click.pass_context
+@main_timer
 def main(ctx):
 
     args = DotMap(get_dict_from_click_args(ctx.args))
@@ -150,17 +151,4 @@ def main(ctx):
 
 
 if __name__ == "__main__":
-    TIMESTAMP_START = datetime.datetime.now()
-    info(SEPERATOR)
-    info(SEPERATOR)
-    info("STARTING script.")
-    info(SEPERATOR)
-
     main()
-
-    TIMESTAMP_END = datetime.datetime.now()
-    TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
-    info(SEPERATOR)
-    info("END script in {0}".format(str(TIMESTAMP_DELTA)))
-    info(SEPERATOR)
-    info(SEPERATOR)

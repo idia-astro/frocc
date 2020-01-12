@@ -32,7 +32,7 @@ import sys
 import numpy as np
 from astropy.io import fits
 
-from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad
+from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer
 from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 
@@ -82,7 +82,7 @@ def get_and_add_custom_header(header, zdim, conf):
     with fits.open(lowestChannelFitsfile, memmap=True) as hud:
         header = hud[0].header
         # Optional: Update the header.
-        header["OBJECT"] = str(conf.data.fieldnames)
+        header["OBJECT"] = str(conf.data.field)
         header["NAXIS3"] = int(zdim)
         header["CTYPE3"] = ("FREQ", "")
     return header
@@ -122,7 +122,9 @@ def make_empty_image(conf):
     # create header
 
     dummy_dims = tuple(1 for d in dims)
-    dummy_data = np.ones(dummy_dims, dtype=np.float32) * np.nan
+    #dummy_data = np.ones(dummy_dims, dtype=np.float64) * np.nan
+    dummy_data = np.zeros(dummy_dims, dtype=np.float64)
+    dummy_data.fill(np.nan)
     hdu = fits.PrimaryHDU(data=dummy_data)
 
     header = hdu.header
@@ -139,7 +141,7 @@ def make_empty_image(conf):
     header_size = len(
         header.tostring()
     )  # Probably 2880. We don't pad the header any more; it's just the bare minimum
-    data_size = np.product(dims) * np.dtype(np.float32).itemsize
+    data_size = np.product(dims) * np.dtype(np.float64).itemsize
     # This is not documented in the example, but appears to be Astropy's default behaviour
     # Pad the total file size to a multiple of the header block size
     block_size = 2880
@@ -313,6 +315,7 @@ def fill_cube_with_images(conf):
     write_statistics_file(rmsDict)
 
 
+@main_timer
 def main():
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     info("Scripts config: {0}".format(conf))
@@ -323,17 +326,4 @@ def main():
 
 
 if __name__ == "__main__":
-    TIMESTAMP_START = datetime.datetime.now()
-    info(SEPERATOR)
-    info(SEPERATOR)
-    info("STARTING script.")
-    info(SEPERATOR)
-
     main()
-
-    TIMESTAMP_END = datetime.datetime.now()
-    TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
-    info(SEPERATOR)
-    info("END script in {0}".format(str(TIMESTAMP_DELTA)))
-    info(SEPERATOR)
-    info(SEPERATOR)

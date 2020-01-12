@@ -1,6 +1,6 @@
 [input]
-# start frquency in [Hz]. All channels below this frequencies will be ignored
-startFreq = 890e6
+# List of frequency ranges in MHz to include (opportunistic) in the data cube
+freqRanges = ["890-1600"]
 
 # Channel width in [Hz] of the final data cube.
 outputChanBandwidth = 2.5e6
@@ -9,8 +9,7 @@ outputChanBandwidth = 2.5e6
 observation = 0
 
 # The field ID
-field = 0
-
+field = 'J0521+1638'
 
 
 # tclean
@@ -44,3 +43,5 @@ dirPlots = "plots/"
 dirList = ["logs/", "images/", "vis/", "plots/"]
 
 markerChannel = ".chan"
+
+hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"

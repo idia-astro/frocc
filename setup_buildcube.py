@@ -33,10 +33,10 @@ FILEPATH_CONFIG_TEMPLATE = "default_config.template"
 # HELPER
 def get_all_freqsList(conf):
     """
-    Get all the frequencies of all the sub-channels in each spw.
+    Get all the frequencies of all the channels in each spw.
     """
     allFreqsList = np.array([])
-    info("""Opening file to read the frequencies of all sub-channels in each spw: {0}""".format(conf.input.inputMS))
+    info("""Opening file to read the frequencies of all channels in each spw: {0}""".format(conf.input.inputMS))
     msmd = msmetadata()
     msmd.open(msfile=conf.input.inputMS, maxcache=10000)
     for spw in range(0, msmd.nspw()):
@@ -47,10 +47,10 @@ def get_all_freqsList(conf):
 
 def get_fieldnames(conf):
     """
-    Get all the frequencies of all the sub-channels in each spw.
+    Get all the frequencies of all the channels in each spw.
     TODO: put all the msmd in one fuction so that the object is created only once.
     """
-    info("""Opening file to read the fieldnames: {0}""".format(conf.input.inputMS))
+    info(f"Opening file to read the fieldnames: {conf.input.inputMS}")
     msmd = msmetadata()
     msmd.open(msfile=conf.input.inputMS, maxcache=10000)
     return msmd.fieldnames()
@@ -58,20 +58,36 @@ def get_fieldnames(conf):
 def get_unflagged_channelIndexBoolList(conf):
     '''
     '''
-    allFreqsList = get_all_freqsList(conf)
-    # A list of indexes for all cube channels that will hold data.
-    # Expl: ( 901e6 [Hz] - 890e6 [Hz] ) // 2.5e6 [Hz] = 4 [listIndex]
-    channelIndexList = [
-        int((freq - conf.input.startFreq) // conf.input.outputChanBandwidth) for freq in allFreqsList
-    ]
-    # remove negative values
-    channelIndexList = np.array(channelIndexList)
-    channelIndexList = channelIndexList[channelIndexList >= 0]
-    maxChannelIndex = max(channelIndexList)
+    def get_subrange_unflagged_channelIndexSet(firstFreq, startFreq, stopFreq):
+        allFreqsList = np.array(get_all_freqsList(conf))
+        # trim to range. TODO: How to do this in one line? Krishna?
+        rangeFreqsList = allFreqsList[allFreqsList >= startFreq]
+        rangeFreqsList = rangeFreqsList[rangeFreqsList <= stopFreq]
+        # A list of indexes for all cube channels in range that will hold data.
+        # Expl: ( 901e6 [Hz] - 890e6 [Hz] ) // 2.5e6 [Hz] = 4 [listIndex]
+        channelIndexList = [
+            int((freq - firstFreq) // conf.input.outputChanBandwidth) for freq in rangeFreqsList
+        ]
+        channelIndexSet = set(channelIndexList)
+        print(channelIndexSet)
+        return channelIndexSet
+
+    rangedChannelIndexSet = set()
+    # TODO: ask Krishna if float conversion is a problem
+    firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
+    for freqRange in conf.input.freqRanges:
+        print(freqRange)
+        # TODO: ask if this can be done shorter
+        startFreq, stopFreq = freqRange.split("-")
+        startFreq = float(startFreq) * 1e6
+        stopFreq = float(stopFreq) * 1e6
+        rangedChannelIndexSet = rangedChannelIndexSet.union(get_subrange_unflagged_channelIndexSet(firstFreq, startFreq, stopFreq))
+
+    maxChannelIndex = max(rangedChannelIndexSet)
     # True if cube channel holds data, otherwise False
     channelIndexBoolList = []
     for ii in range(0, maxChannelIndex + 1):
-        if ii in channelIndexList:
+        if ii in rangedChannelIndexSet:
             channelIndexBoolList.append(True)
         else:
             channelIndexBoolList.append(False)
@@ -92,7 +108,7 @@ def get_unflagged_channelList(conf):
 def write_user_config_input(args):
     '''
     '''
-    info("""Writing user input to file: {0}, {1}""".format(args, FILEPATH_CONFIG_USER))
+    info(f"Writing user input to file: {args}, {FILEPATH_CONFIG_USER}")
     configString = "# TODO short discription.\n"
     configString += "# - - - - - - - - - - - - - - - - -\n\n"
     configString += "[input]\n"
@@ -106,7 +122,7 @@ def write_user_config_input(args):
 def append_user_config_data(data):
     '''
     '''
-    info("""Appending msdata to file: {0}, {1}""".format(data, FILEPATH_CONFIG_USER))
+    info(f"Appending msdata to file: {data}, {FILEPATH_CONFIG_USER}")
     configString = "\n\n[data]\n"
     configInputStringArray = []
     with open(FILEPATH_CONFIG_USER, 'a') as f:
@@ -131,7 +147,7 @@ def write_all_sbatch_files(conf):
     # split and tclean
     basename = "cube_split_and_tclean"
     filename = basename + ".sbatch"
-    info("Writing sbtach file: {0}".format(filename))
+    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
             'array': "1-" + str(len(conf.data.predictedOutputChannels)) + "%30",
             'job-name': basename,
@@ -144,7 +160,7 @@ def write_all_sbatch_files(conf):
     # buildcube
     basename = "cube_buildcube"
     filename = basename + ".sbatch"
-    info("Writing sbtach file: {0}".format(filename))
+    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
             'array': "1-1%1",
             'job-name': basename,
@@ -171,13 +187,13 @@ def write_all_sbatch_files(conf):
     command = '/usr/bin/singularity exec /data/exp_soft/containers/python-3.6.img python3 ' + basename + '.py'
     write_sbtach_file(filename, command, sbatchDict)
 
-@main_timer
 @click.command(context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True,
 ))
 #@click.argument('--inputMS', required=False)
 @click.pass_context
+@main_timer
 def main(ctx):
     '''
     TODO: I made click super generic which is nice for development but we may
