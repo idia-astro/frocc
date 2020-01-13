@@ -92,10 +92,21 @@ def get_config_in_dot_notation(templateFilename="default_config.template", confi
     return dot
 
 def get_channelNumber_from_filename(filename, marker, digits=3):
+    '''
+    TODO: digits=3 -> len(marker)
+    '''
     markerChannelPositionEnd = int(filename.find(marker)) + len(marker)
-    highestChannel = filename[markerChannelPositionEnd:markerChannelPositionEnd+digits]
-    return highestChannel.zfill(digits)
+    chanNo = filename[markerChannelPositionEnd:markerChannelPositionEnd+digits]
+    return chanNo.zfill(digits)
 
+def change_channelNumber_from_filename(filename, marker, newChanNo, digits=3):
+    '''
+    TODO: digits=3 -> len(marker)
+    '''
+    markerChannelPositionEnd = int(filename.find(marker)) + len(marker)
+    chanNo = filename[markerChannelPositionEnd:markerChannelPositionEnd+digits]
+    newFilename = filename.replace(marker+str(chanNo).zfill(digits), marker+str(newChanNo).zfill(digits))
+    return newFilename
 
 def main_timer(func):
     '''
@@ -192,3 +203,74 @@ def get_std_via_mad(npArray):
     std = 1.4826 * mad
     return std
 
+
+def chanList_to_chanRangeList_OLD(chanList):
+    '''
+    Converts [1, 2, 3, 5, 7, 8, 9] -> ["1-3", "5", "7-9"]
+    TODO: doesn't work
+    '''
+    chanList = sorted(chanList)
+    chanRangeList = []
+    if len(chanList) <= 1:
+        chanRangeList.append("".join(chanList))
+    else:
+        rangeString = str(chanList[0])
+        previousChanNo = chanList[0]
+        for chanNo in chanList[1:]:
+            if chanNo - 1  == previousChanNo:
+                previousChanNo = chanNo
+            else:
+                chanRangeList.append(rangeString + "-" + str(previousChanNo))
+                rangeString = str(chanNo)
+                previousChanNo = chanNo
+
+    print(chanRangeList)
+    return chanRangeList
+
+
+def chanList_to_chanRangeList(chanList):
+    '''
+    Converts [1, 2, 3, 5, 7, 8, 9] -> ["1-3", "5", "7-9"]
+    TODO: doesn't work
+    '''
+    def cut_list_at_breaks(longList, cutList):
+        for ii, chanNo in enumerate(longList[:-2]):
+            if longList[ii + 1] != chanNo + 1:
+                #print(longList[:ii + 1])
+                print(longList[ii + 1:])
+                cut_list_at_breaks(longList[ii + 1:], [])
+
+             #   print(longList[ii + 1:])
+                #breakIndexList.append(ii)
+        return cutList
+
+
+    cut_list_at_breaks(chanList, [])
+    chanList = sorted(chanList)
+    chanRangeList = []
+    if len(chanList) <= 1:
+        chanRangeList.append("".join(map(str,chanList)))
+#    else:
+#        breakIndexList = []
+#        for ii, chanNo in enumerate(chanList[:-2]):
+#            if chanList[ii + 1] != chanNo + 1:
+#                breakIndexList.append(ii)
+#        for nn, breakIndex in enumerate(breakIndexList):
+#            if breakIndex == breakIndexList[0]:
+#                print(chanList[:breakIndex+1])
+#            elif breakIndex == breakIndexList[-1]:
+#                print(chanList[breakIndex:])
+#            else:
+#                print(chanList[breakIndexList[nn]:breakIndex+1])
+
+            #if 
+            #print(ii, chanNo)
+
+    #print(breakIndexList)
+    return chanRangeList
+
+
+#a = [1,2,3,5,8,9,10]
+#print(a[2:3])
+
+#chanList_to_chanRangeList(a)

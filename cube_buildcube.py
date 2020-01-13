@@ -32,7 +32,7 @@ import sys
 import numpy as np
 from astropy.io import fits
 
-from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer
+from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename
 from setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 
@@ -123,8 +123,8 @@ def make_empty_image(conf):
 
     dummy_dims = tuple(1 for d in dims)
     #dummy_data = np.ones(dummy_dims, dtype=np.float64) * np.nan
+    #dummy_data = dummy_data.fill(np.nan)
     dummy_data = np.zeros(dummy_dims, dtype=np.float64)
-    dummy_data.fill(np.nan)
     hdu = fits.PrimaryHDU(data=dummy_data)
 
     header = hdu.header
@@ -256,11 +256,12 @@ def fill_cube_with_images(conf):
     rmsDict["maxI"] = []
     rmsDict["flagged"] = []
     channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
-    for channelFitsfile in channelFitsfileList:
-        idx = int(get_channelNumber_from_filename(channelFitsfile, conf.env.markerChannel)) - 1
-        rmsDict['chanNo'].append(idx)
-        quickSwitch = False
-        info("Trying to open fits file: {0}".format(channelFitsfile))
+    maxChanNo =  int(get_channelNumber_from_filename(channelFitsfileList[-1], conf.env.markerChannel))
+    for ii in range(0, maxChanNo):
+        rmsDict['chanNo'].append(ii + 1)
+        hudSwitch = False
+        channelFitsfile = change_channelNumber_from_filename(channelFitsfileList[0], conf.env.markerChannel, ii + 1)
+        info(f"Trying to open fits file: {channelFitsfile}")
         # Switch
         stokesVflag = False
 
@@ -272,13 +273,15 @@ def fill_cube_with_images(conf):
             stokesV = hud[0].data[3, 0, :, :]
             checkedArray, std = check_rms(stokesV)
             rmsDict["rmsV"].append(std)
-            dataCube[3, idx, :, :] = checkedArray
+            dataCube[3, ii, :, :] = checkedArray
             if np.isnan(np.sum(checkedArray)) or std==0:
                 stokesVflag = True
-            quickSwitch = True
+                rmsDict['freq'][-1] = np.nan
+            hudSwitch = True
         except:
-            info("Flagging channel, can not open file: %s", channelFitsfile)
+            info(f"Flagging channel, can not open file: {channelFitsfile}")
             stokesVflag = True
+            rmsDict["freq"].append(np.nan)
             rmsDict["rmsV"].append(np.nan)
 
         if not stokesVflag:
@@ -287,27 +290,27 @@ def fill_cube_with_images(conf):
             rmsDict["rmsI"].append(std)
             rmsDict["maxI"].append(np.max(stokesI))
             rmsDict["flagged"].append(False)
-            dataCube[0, idx, :, :] = stokesI
+            dataCube[0, ii, :, :] = stokesI
 
             stokesQ = hud[0].data[1, 0, :, :]
-            dataCube[1, idx, :, :] = stokesQ
+            dataCube[1, ii, :, :] = stokesQ
 
             stokesU = hud[0].data[2, 0, :, :]
-            dataCube[2, idx, :, :] = stokesU
+            dataCube[2, ii, :, :] = stokesU
 
         elif stokesVflag:
-            info(
-                "Stokes V RMS noise of {0} is below below 1 [uJy/beam]. Flagging Stokes IQUV.".format(round(rmsDict["rmsV"][-1] * 1e6, 2))
-            )
-            dataCube[0, idx, :, :] = np.nan
-            dataCube[1, idx, :, :] = np.nan
-            dataCube[2, idx, :, :] = np.nan
-            dataCube[3, idx, :, :] = np.nan
+            dataCube[0, ii, :, :] = np.nan
+            dataCube[1, ii, :, :] = np.nan
+            dataCube[2, ii, :, :] = np.nan
+            dataCube[3, ii, :, :] = np.nan
             rmsDict["rmsI"].append(np.nan)
             rmsDict["maxI"].append(np.nan)
             rmsDict["flagged"].append(True)
+            info(
+                "Stokes V RMS noise of {0} is below below 1 [uJy/beam]. Flagging Stokes IQUV.".format(round(rmsDict["rmsV"][-1] * 1e6, 2))
+            )
 
-        if quickSwitch:
+        if hudSwitch:
             hud.close()
 
 
