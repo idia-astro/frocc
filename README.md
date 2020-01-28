@@ -13,6 +13,8 @@ initialize the config file
 4. run cube_buildcube.sbatch
 5. run cube_ior_flagging.sbatch
 
+Also via `pip install` installable. Instructions come later since it has some caveats regarding `$PYTHONPATH` in a singularity container.
+
 TODO
 ====
 - optimisations 

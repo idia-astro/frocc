@@ -1,0 +1,7 @@
+# TODO short discription.
+# - - - - - - - - - - - - - - - - -
+
+[input]
+inputMS = /users/krishna/ceph/XMMLSS/XMMLSS_12/XMMLSS12_recal/1538856059/1538856059_sdp_l0.J0201-1132.mms
+freqRanges = ["920-1000", "1400-1500"]
+basename = "input"
