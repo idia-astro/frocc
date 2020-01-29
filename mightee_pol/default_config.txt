@@ -1,7 +1,9 @@
-# TODO short discription.
-# - - - - - - - - - - - - - - - - -
+# This is the configuration file to initialise the mightee_pol cube generation.
+# Please change the parameters accordingly.
+# Default values are read from the template file .default_config.template.
+# Values from the template file can be used in this file here to overwrite the defaults
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 [input]
-inputMS = /users/krishna/ceph/XMMLSS/XMMLSS_12/XMMLSS12_recal/1538856059/1538856059_sdp_l0.J0201-1132.mms
-freqRanges = ["920-1000", "1400-1500"]
-basename = "input"
+basename = input
+inputMS = input.ms

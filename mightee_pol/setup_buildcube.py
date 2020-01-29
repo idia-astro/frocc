@@ -26,8 +26,9 @@ logging.basicConfig(
 SEPERATOR = "-----------------------------------------------------------------"
 
 FILEPATH_CONFIG_USER = "default_config.txt"
-FILEPATH_PACKAGE = os.path.dirname(mightee_pol.__file__)  # helper
-FILEPATH_CONFIG_TEMPLATE = os.path.join(FILEPATH_PACKAGE, "default_config.template")
+PATH_PACKAGE = os.path.dirname(mightee_pol.__file__)  # helper
+FILEPATH_CONFIG_TEMPLATE = ".default_config.template"
+FILEPATH_CONFIG_TEMPLATE_ORIGINAL = os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE)
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -124,8 +125,12 @@ def write_user_config_input(args):
     '''
     '''
     info(f"Writing user input to file: {args}, {FILEPATH_CONFIG_USER}")
-    configString = "# TODO short discription.\n"
-    configString += "# - - - - - - - - - - - - - - - - -\n\n"
+    configString = "# This is the configuration file to initialise the mightee_pol cube generation.\n"
+    configString += "# Please change the parameters accordingly.\n\n"
+    configString += f"# Default values are read from the template file {FILEPATH_CONFIG_TEMPLATE}.\n"
+    configString += "# Parameters from the template file can be used in this file you are editing here\n"
+    configString += "# to overwrite the defaults.\n"
+    configString += "#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n\n"
     configString += "[input]\n"
     configInputStringArray = []
     with open(FILEPATH_CONFIG_USER, 'w') as f:
@@ -239,7 +244,7 @@ def copy_runscripts(conf):
     Copies the runScripts to the local directory
     '''
     for script in conf.env.runScripts:
-        shutil.copyfile(os.path.join(FILEPATH_PACKAGE, script), script)
+        shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
 
 
 @click.command(context_settings=dict(
@@ -254,26 +259,38 @@ def main(ctx):
     TODO: I made click super generic which is nice for development but we may
     want to change this for production.
     '''
-    # get the click args in dot dotation
-    args = DotMap(get_dict_from_click_args(ctx.args))
-    info("Scripts arguments: {0}".format(args))
 
-    # data: values derived from the measurement set like valid channels
-    data = {}
-    write_user_config_input(args)
-    conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+    if "--createConfig" in ctx.args:
+        ctx.args.remove('--createConfig')  # If not deleted this key would appear in the config file.
+        # get the click args in dot dotation
+        args = DotMap(get_dict_from_click_args(ctx.args))
+        info("Scripts arguments: {0}".format(args))
+        info(f"Creating config file: {FILEPATH_CONFIG_USER}")
+        write_user_config_input(args)
+        # copy config template into local directory
+        try:
+            shutil.copyfile(os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE_ORIGINAL), FILEPATH_CONFIG_TEMPLATE)
+        except:
+            pass
 
-    data['predictedOutputChannels'] = get_unflagged_channelList(conf)
-    data['fieldnames'] = get_fieldnames(conf)
-    append_user_config_data(data)
-    # reload conf after data got appended to user conf
-    conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+    elif "--createScripts" in ctx.args:
+        args = DotMap(get_dict_from_click_args(ctx.args))
+        info("Scripts arguments: {0}".format(args))
+        # data: values derived from the measurement set like valid channels
+        data = {}
+        conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
-    create_directories(conf)
+        data['predictedOutputChannels'] = get_unflagged_channelList(conf)
+        data['fieldnames'] = get_fieldnames(conf)
+        append_user_config_data(data)
+        # reload conf after data got appended to user conf
+        conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
-    write_all_sbatch_files(conf)
+        create_directories(conf)
 
-    copy_runscripts(conf)
+        write_all_sbatch_files(conf)
+
+        copy_runscripts(conf)
 
 
 if __name__ == '__main__':
