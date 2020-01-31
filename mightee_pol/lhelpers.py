@@ -8,12 +8,14 @@ import ast
 import logging
 import functools
 import numpy as np
+import inspect
 from logging import info, error
 
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
-SEPERATOR = "-----------------------------------------------------------------"
+SEPERATOR = "-------------------------------------------------------------------------------"
+SEPERATOR_HEAVY = "==============================================================================="
 
 
 class DotMap(dict):
@@ -80,7 +82,6 @@ def get_config_in_dot_notation(templateFilename="default_config.template", confi
     config.optionxform = lambda option: option
     config.read([templateFilename, configFilename])
     dot = DotMap(config._sections)
-    #print(dot.__dict__)
     for section in config._sections:
         setattr(dot, section, DotMap(config[section]))
         for key, value in config[section].items():
@@ -114,21 +115,17 @@ def main_timer(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         TIMESTAMP_START = datetime.datetime.now()
-        info(SEPERATOR)
-        info(SEPERATOR)
-        info("STARTING script.")
+        info(SEPERATOR_HEAVY)
+        info(f"STARTING script: {inspect.stack()[-1].filename}")
         info(SEPERATOR)
 
-        # TODO: debug, click eats half of the decorator message
-        print(func)
         func(*args, **kwargs)
 
         TIMESTAMP_END = datetime.datetime.now()
         TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
         info(SEPERATOR)
-        info("END script in {0}".format(str(TIMESTAMP_DELTA)))
-        info(SEPERATOR)
-        info(SEPERATOR)
+        info(f"END script in {TIMESTAMP_DELTA}: {inspect.stack()[-1].filename}")
+        info(SEPERATOR_HEAVY)
     return wrapper
 
 
@@ -208,73 +205,3 @@ def get_firstFreq(conf):
     firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
     return firstFreq
 
-def chanList_to_chanRangeList_OLD(chanList):
-    '''
-    Converts [1, 2, 3, 5, 7, 8, 9] -> ["1-3", "5", "7-9"]
-    TODO: doesn't work
-    '''
-    chanList = sorted(chanList)
-    chanRangeList = []
-    if len(chanList) <= 1:
-        chanRangeList.append("".join(chanList))
-    else:
-        rangeString = str(chanList[0])
-        previousChanNo = chanList[0]
-        for chanNo in chanList[1:]:
-            if chanNo - 1  == previousChanNo:
-                previousChanNo = chanNo
-            else:
-                chanRangeList.append(rangeString + "-" + str(previousChanNo))
-                rangeString = str(chanNo)
-                previousChanNo = chanNo
-
-    print(chanRangeList)
-    return chanRangeList
-
-
-def chanList_to_chanRangeList(chanList):
-    '''
-    Converts [1, 2, 3, 5, 7, 8, 9] -> ["1-3", "5", "7-9"]
-    TODO: doesn't work
-    '''
-    def cut_list_at_breaks(longList, cutList):
-        for ii, chanNo in enumerate(longList[:-2]):
-            if longList[ii + 1] != chanNo + 1:
-                #print(longList[:ii + 1])
-                print(longList[ii + 1:])
-                cut_list_at_breaks(longList[ii + 1:], [])
-
-             #   print(longList[ii + 1:])
-                #breakIndexList.append(ii)
-        return cutList
-
-
-    cut_list_at_breaks(chanList, [])
-    chanList = sorted(chanList)
-    chanRangeList = []
-    if len(chanList) <= 1:
-        chanRangeList.append("".join(map(str,chanList)))
-#    else:
-#        breakIndexList = []
-#        for ii, chanNo in enumerate(chanList[:-2]):
-#            if chanList[ii + 1] != chanNo + 1:
-#                breakIndexList.append(ii)
-#        for nn, breakIndex in enumerate(breakIndexList):
-#            if breakIndex == breakIndexList[0]:
-#                print(chanList[:breakIndex+1])
-#            elif breakIndex == breakIndexList[-1]:
-#                print(chanList[breakIndex:])
-#            else:
-#                print(chanList[breakIndexList[nn]:breakIndex+1])
-
-            #if 
-            #print(ii, chanNo)
-
-    #print(breakIndexList)
-    return chanRangeList
-
-
-#a = [1,2,3,5,8,9,10]
-#print(a[2:3])
-
-#chanList_to_chanRangeList(a)

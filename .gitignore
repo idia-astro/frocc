@@ -10,7 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/
 downloads/
 eggs/
 .eggs/
@@ -130,9 +130,12 @@ dmypy.json
 
 # own Lennart
 __pycache__/
-testing.*
-*casa*
-images/*
-vis/*
-logs/*
-cube.*
+setup.py
+*/test*
+*/*casa*
+*/images/*
+*/vis/*
+*/logs/*
+*/plots/*
+*/cube.*
+*/.*
