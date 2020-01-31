@@ -8,7 +8,7 @@ Repo to hold all the analysis and cube generation script for MIGHTEE-pol
 
 
 ## Usage
-1. meerkat-pol --createConfig --inputMS <path to input.ms>`--field <fieldname>
+1. meerkat-pol --createConfig --inputMS `<path to input.ms>` --field `<fieldname>`
 2. meerkat-pol --createScripts
 3. meerkat-pol --start
 
