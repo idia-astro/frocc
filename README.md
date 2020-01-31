@@ -4,21 +4,18 @@ Repo to hold all the analysis and cube generation script for MIGHTEE-pol
 
 ## Installation
 1. git clone https://github.com/idia-astro/mightee-pol
-2. 
+2. pip install --user mightee-pol/dist/mightee_pol-0.0.1-py3-none-any.whl
 
 
+## Usage
+1. meerkat-pol --createConfig --inputMS <path to input.ms>`--field <fieldname>
+2. meerkat-pol --createScripts
+3. meerkat-pol --start
 
-1. `srun -N 1 --mem 10G --ntasks-per-node 1 --cpus-per-task 1 --time 10:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg python ./setup_buildcube.py --createConfig --inputMS "input.ms"` --freqRanges '["890-1600"]'
-2. adjust config default_config.txt with settings found in .default_config.template. Don't change .default_config.template, it contains the default fallback values.
-3. `srun -N 1 --mem 10G --ntasks-per-node 1 --cpus-per-task 1 --time 10:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg python ./setup_buildcube.py --createScripts
-4. run cube_split_and_tclean.sbatch and wait for it to finish
-5. run cube_buildcube.sbatch
-6. run cube_ior_flagging.sbatch
+## Problems
+- RM-Sythesis works only for the calibrator
 
-Also via `pip install` installable. Instructions come later since it has some caveats regarding `$PYTHONPATH` in a singularity container.
-
-TODO
-====
+## TODO
 - optimisations 
 - more statistics
 - cleanup
