@@ -138,4 +138,5 @@ setup.py
 */logs/*
 */plots/*
 */cube.*
+*/*.swp
 */.*
