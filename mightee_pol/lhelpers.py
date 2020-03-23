@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Convinience functions and classes.
 '''
@@ -9,6 +10,7 @@ import logging
 import functools
 import numpy as np
 import inspect
+from astropy.io import fits
 from logging import info, error
 
 logging.basicConfig(
@@ -74,7 +76,7 @@ def get_dict_from_click_args(argsList):
     return argsDict
 
 
-def get_config_in_dot_notation(templateFilename="default_config.template", configFilename="default_config.txt"):
+def get_config_in_dot_notation(templateFilename=".default_config.template", configFilename="default_config.txt"):
     '''
     '''
     config = configparser.ConfigParser(allow_no_value=True, strict=False)
@@ -205,3 +207,35 @@ def get_firstFreq(conf):
     firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
     return firstFreq
 
+def update_fits_header_of_cube(filepathCube, headerDict):
+    '''
+    '''
+    info(f"Updating header for file: File: {filepathCube}, Update: {headerDict}")
+    with fits.open(filepathCube, memmap=True, ignore_missing_end=True, mode="update") as hud:
+        header = hud[0].header
+        for key, value in headerDict.items():
+            header[key] = value
+
+def get_lowest_channelNo_with_data_in_cube(filepathCube):
+    '''
+    '''
+    info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
+    hud =  fits.open(filepathCube, memmap=True, mode="update")
+    dataCube = hud[0].data
+    maxIdx = hud[0].data.shape[1]
+    for ii in range(0, maxIdx + 1):
+        if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
+            continue
+        else:
+            chanNo = ii + 1
+            hud.close()
+            return chanNo
+
+def update_CRPIX3(filepathCube):
+    '''
+    Updates the frequency reference channel in the fits header, CRPIX3.
+    '''
+    chanNo = get_lowest_channelNo_with_data_in_cube(filepathCube)
+    headerDict = {"CRPIX3": chanNo}
+    info(f"Updating CRPIX3 value in fits header: {filepathCube}, {headerDict}")
+    update_fits_header_of_cube(filepathCube, headerDict)

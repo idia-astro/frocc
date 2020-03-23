@@ -1,4 +1,5 @@
 #!python3
+# -*- coding: utf-8 -*-
 '''
 ------------------------------------------------------------------------------
 Beta code
@@ -32,15 +33,17 @@ import sys
 import logging
 import datetime
 import argparse
+from glob import glob
 import os
 from logging import info, error
 
 import click
 
+import casampi
 import casatasks 
 
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, get_firstFreq
+from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, get_firstFreq, SEPERATOR
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -48,8 +51,6 @@ from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
-SEPERATOR = "-----------------------------------------------------------------"
-
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -84,7 +85,7 @@ def call_split(channelNumber, conf):
         field=str(conf.input.field),
         spw=spw,
         keepmms=False,
-        datacolumn="data",
+        datacolumn=conf.input.datacolumn,
     )
     # TODO: find better way than returning the outputMS filename
     return outputMS
@@ -112,7 +113,7 @@ def call_tclean(channelInputMS, conf):
         weighting=conf.input.weighting,
         robust=conf.input.robust,
         pblimit=conf.input.pblimit,
-        # mask=args.cleanmask, usemask='user',
+        mask=conf.input.mask,
         restoration=conf.input.restoration,
         restoringbeam=[conf.input.restoringbeam],
     )
@@ -146,7 +147,7 @@ def main(ctx):
     channelNumber = get_channelNumber_from_slurmArrayTaskId(args.slurmArrayTaskId, conf)
 
     # TODO: help: re-definition of casalog not working.
-    casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
+    # casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
 
     splitOutputMS = call_split(channelNumber, conf)
     call_tclean(splitOutputMS, conf)

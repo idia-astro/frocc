@@ -1,14 +1,21 @@
+#!python3
+# -*- coding: utf-8 -*-
 import sys
 import logging
 import datetime
 import os
+import time
 import shutil
+import re
 import subprocess
 from logging import info, error, warning
 
 # own helpers
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq
+from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, SEPERATOR
 import mightee_pol
+
+os.environ['LC_ALL'] = "C.UTF-8"
+os.environ['LANG'] = "C.UTF-8"
 
 # need to be instaled in container. Right now linkt with $PYTHONPATH
 import click
@@ -23,7 +30,6 @@ import numpy as np
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
-SEPERATOR = "-----------------------------------------------------------------"
 
 FILEPATH_CONFIG_USER = "default_config.txt"
 PATH_PACKAGE = os.path.dirname(mightee_pol.__file__)  # helper
@@ -102,13 +108,20 @@ def get_unflagged_channelList(conf):
             channelList.append(i+1)
     return channelList
 
-def get_basename_from_path(filepath):
+def get_basename_from_path(filepath, args):
     # remove "/" from end of path
     basename = filepath.strip("/")
     # get basename frompath
     basename = os.path.basename(basename)
     # remove file extension
     basename = os.path.splitext(basename)[0]
+    # remove _spd_f0
+    basename = re.sub(r'_sdp_l[0-9]', "", basename)
+    # get creationTime of filepath
+    creationTime = time.strftime("%Y%m%d", time.gmtime(os.path.getctime(filepath)))
+    basename +=  "." + creationTime
+    if args.get("basenamePrefix"):
+        basename = args['basenamePrefix'] + "." + basename
     return basename
 
 # HELPER
@@ -131,7 +144,7 @@ def write_user_config_input(args):
             if key in ["createConfig", "createScripts", "start"]:
                 continue
             if key == "inputMS":
-                configInputStringArray.append("basename" + " = " + get_basename_from_path(value))
+                configInputStringArray.append("basename" + " = " + get_basename_from_path(value, args))
             configInputStringArray.append(key + " = " + value)
             # don't write these flags to the config file
         configString += "\n".join(configInputStringArray)
@@ -260,9 +273,10 @@ def main(ctx):
     if "--createConfig" in ctx.args:
         # If not deleted this key would appear in the config file.
         # get the click args in dot dotation
-        args = DotMap(get_dict_from_click_args(ctx.args))
-        info(f"Scripts arguments: {args}")
-        write_user_config_input(args)
+        print(ctx.args)
+        conf = DotMap(get_dict_from_click_args(ctx.args))
+        info(f"Scripts arguments: {conf}")
+        write_user_config_input(conf)
         # copy config template into local directory
         try:
             shutil.copy2(os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE_ORIGINAL), FILEPATH_CONFIG_TEMPLATE)
@@ -275,6 +289,7 @@ def main(ctx):
         # data: values derived from the measurement set like valid channels
         data = {}
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+        print(conf)
 
         data['predictedOutputChannels'] = get_unflagged_channelList(conf)
         data['fieldnames'] = get_fieldnames(conf)
@@ -292,14 +307,13 @@ def main(ctx):
     if "--start" in ctx.args:
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
         args = DotMap(get_dict_from_click_args(ctx.args))
-        info(f"Scripts arguments: {args}")
-        print(conf)
         firstRunScript = conf.env.runScripts[0].replace('.py', '.sbatch')
         command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && "
         for runScript in conf.env.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
-            command += f"echo SLURMID: $SLURMID;SLURMID=$(sbatch --dependency=afterok:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
-        command += "Slurm jobs submitted!"
+            command += f"echo SLURMID: $SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
+        command += "echo Slurm jobs submitted!"
+        print(command)
         subprocess.run(command, shell=True)
         return None
 

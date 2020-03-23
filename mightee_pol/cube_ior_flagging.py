@@ -1,4 +1,5 @@
 #!python3
+# -*- coding: utf-8 -*-
 
 import numpy as np
 import logging
@@ -13,12 +14,12 @@ from astropy.io import fits
 from glob import glob
 
 from scipy import *
-from mightee_pol.lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer
+from mightee_pol.lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer, update_CRPIX3, SEPERATOR
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from logging import info, error
 import subprocess
 
-IOR_LIMIT_SIGMA = 4 # n sigma over median
+IOR_LIMIT_SIGMA = 5 # n sigma over median
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -26,7 +27,6 @@ IOR_LIMIT_SIGMA = 4 # n sigma over median
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
-SEPERATOR = "-----------------------------------------------------------------"
 
 sns.set(font_scale=1.5)
 #plt.rcParams.update({'font.size': 12})
@@ -244,6 +244,8 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
         dataCube[:, idx, :, :] = np.nan
     hudCube.close()
 
+    update_CRPIX3(cubeName)
+
     info(SEPERATOR)
     info("Generating HDF5 file from: {0}".format(cubeName))
     command = [conf.env.hdf5Converter, cubeName]
@@ -252,13 +254,13 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
 
 def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
     '''
+    TODO: not optimzed yet. This goes through the whole cube even flagged
+    channels are known from the previous statistics
     '''
     chanNoList = []
     for chanNo, flagged in zip(initialStatsDict['chanNo'], initialStatsDict['flagged']):
-        print(chanNo, flagged)
-        if not flagged and (chanNo in outlierChanNoList):
+        if flagged and (chanNo in outlierChanNoList):
             chanNoList.append(chanNo)
-    print(chanNoList)
     return chanNoList
 
 @main_timer
