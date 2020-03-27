@@ -4,6 +4,7 @@ Convinience functions and classes.
 
 import configparser
 import datetime
+import os
 import ast
 import logging
 import functools
@@ -150,6 +151,7 @@ def write_sbtach_file(filename, command, sbatchDict={}):
             sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
 
         sbatchScript += "\n\ncat /etc/hostname" 
+        sbatchScript += "\nulimit -a" 
         sbatchScript += "\n\n" + command
         f.write(sbatchScript)
 
@@ -205,3 +207,46 @@ def get_firstFreq(conf):
     firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
     return firstFreq
 
+def get_basename_from_path(filepath):
+    '''
+    '''
+    try:
+        isinstance(eval(filepath), list)
+    except:
+        # convert string to list, split at, strip whitespace and all back to a string again to write it to config
+        filepath = str([x.strip() for x in list(filter(None, filepath.split(",")))])
+    # remove "/" from end of path
+    basename = eval(filepath)[0].strip("/")
+    # get basename frompath
+    basename = os.path.basename(basename)
+    # remove file extension
+    basename = os.path.splitext(basename)[0]
+    return basename
+
+def get_optimal_taskNo_cpu_mem(conf):
+    '''
+    Tries to return an optimal resource profile (mainly for t-clean) derived
+    from the image size. At the moment only a naive implementation is done.
+    Scaling linear: 500px to 7500px. Have a look into .default_config.template
+    '''
+    def linear_fit(m, x, b):
+        return m * x + b
+
+    mMemory = (conf.env.tcleanMaxMemory - conf.env.tcleanMinMemory) / (7500 - 500)
+    mCPU = (conf.env.tcleanMaxCpuCores - conf.env.tcleanMinCpuCores) / (7500 - 500)
+
+    bMemory = (mMemory * 7500) / conf.env.tcleanMaxMemory
+    bCPU = (mCPU * 7500) / conf.env.tcleanMaxCpuCores
+
+    yMemory = int(linear_fit(mMemory, conf.input.imsize, bMemory))
+    yCPU = int(linear_fit(mCPU, conf.input.imsize, bCPU))
+
+    # calculate how many slurm tasks can be started to fit on maxSimultaniousNodes
+    numberOfTasks = conf.env.tcleanMaxMemory // yMemory * conf.env.maxSimultaniousNodes
+    optimalDict = {"maxTasks": numberOfTasks, "cpu": yCPU, "mem": yMemory}
+    info(f"Setting tclean sbatch values based on imsize: {optimalDict}")
+    return optimalDict
+
+
+def get_timestamp():
+    return datetime.datetime.now().strftime("%Y%m%d")

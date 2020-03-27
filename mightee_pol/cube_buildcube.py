@@ -1,21 +1,21 @@
 #!python3
+# -*- coding: utf-8 -*-
 """
 ------------------------------------------------------------------------------
-This script generates an empty dummy 4 dimensional data cube in fits format.
-After the initialisation this cube gets filled with fits image data. The
-cube header gets updated from the first image in PATHLIST_STOKES_IQUV.
-This script can be used to generate fits data cubes of sizes that exceeds the
-machine's RAM (tested with 234 GB RAM and 335 GB cube data).
 
-Please adjust the INPUT section in this script to your needs.
-
-The data in directory `images` is test data and consists of Gaussian noise only.  
+ This script generates an empty dummy 4 dimensional data cube in fits format.
+ After the initialisation this cube gets filled with fits image data. The
+ cube header gets updated from the first image in `env.dirImages`.
+ This script can be used to generate fits data cubes of sizes that exceeds the
+ machine's RAM (tested with 234 GB RAM and 335 GB cube data).
 
 ------------------------------------------------------------------------------
-Developed at: IDIA (Institure for Data Intensive Astronomy), Cape Town, ZA
-Inspired by: https://github.com/idia-astro/image-generator
 
-Lennart Heino
+ Developed at: IDIA (Institure for Data Intensive Astronomy), Cape Town, ZA
+ Inspired by: https://github.com/idia-astro/image-generator
+ 
+ Lennart Heino
+
 ------------------------------------------------------------------------------
 """
 
@@ -28,11 +28,12 @@ import datetime
 from glob import glob
 import re
 import sys
+import click
 
 import numpy as np
 from astropy.io import fits
 
-from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename
+from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename, update_CRPIX3, SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 
@@ -44,14 +45,11 @@ from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFI
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
-SEPERATOR = "-----------------------------------------------------------------"
-
-MARKER_CHANNEL = ".chan"
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def get_and_add_custom_header(header, zdim, conf):
+def get_and_add_custom_header(header, zdim, conf, mode="normal"):
     """
     Gets header from fits file and updates the cube header.
 
@@ -68,18 +66,22 @@ def get_and_add_custom_header(header, zdim, conf):
 
     """
     info(SEPERATOR)
-    lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.fits"))[0]
+    if mode == "smoothed":
+        lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))[0]
+    else:
+        lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.fits"))[0]
+
     info("Getting header for data cube from: %s", lowestChannelFitsfile)
     with fits.open(lowestChannelFitsfile, memmap=True) as hud:
         header = hud[0].header
-        # Optional: Update the header.
-        header["OBJECT"] = str(conf.data.field)
-        header["NAXIS3"] = int(zdim)
-        header["CTYPE3"] = ("FREQ", "")
+    #    # Optional: Update the header.
+    #    header["OBJECT"] = str(conf.data.field)
+    #    header["NAXIS3"] = int(zdim)
+    #    header["CTYPE3"] = ("FREQ", "")
     return header
 
 
-def make_empty_image(conf):
+def make_empty_image(conf, mode="normal"):
     """
     Generate an empty dummy fits data cube.
 
@@ -87,7 +89,11 @@ def make_empty_image(conf):
     resulting data cube can exceed the machine's RAM.
 
     """
-    channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+    if mode == "smoothed":
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
+    else:
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+        
     lowestChannelFitsfile = channelFitsfileList[0]
     highestChannelFitsfile = channelFitsfileList[-1]
     info(SEPERATOR)
@@ -102,7 +108,7 @@ def make_empty_image(conf):
     )
     # parse highest channel from fits file to get cube z dimension
     zdim = int(get_channelNumber_from_filename(highestChannelFitsfile, conf.env.markerChannel))
-    info("Z-dimension: {0}".format(zdim))
+    info(f"Z-dimension: {zdim}")
 
     info("Assuming full Stokes for dimension W.")
     wdim = 4
@@ -115,15 +121,18 @@ def make_empty_image(conf):
     dummy_dims = tuple(1 for d in dims)
     #dummy_data = np.ones(dummy_dims, dtype=np.float64) * np.nan
     #dummy_data = dummy_data.fill(np.nan)
-    dummy_data = np.zeros(dummy_dims, dtype=np.float64)
+    dummy_data = np.zeros(dummy_dims, dtype=np.float32)
     hdu = fits.PrimaryHDU(data=dummy_data)
 
     header = hdu.header
-    header = get_and_add_custom_header(header, zdim, conf)
+    header = get_and_add_custom_header(header, zdim, conf, mode=mode)
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
 
-    cubeName = "cube." + conf.input.basename + ".fits"
+    if mode == "smoothed":
+        cubeName = "cube." + conf.input.basename + ".smoothed.fits"
+    else:
+        cubeName = "cube." + conf.input.basename + ".fits"
 
     header.tofile(cubeName, overwrite=True)
 
@@ -132,11 +141,11 @@ def make_empty_image(conf):
     header_size = len(
         header.tostring()
     )  # Probably 2880. We don't pad the header any more; it's just the bare minimum
-    data_size = np.product(dims) * np.dtype(np.float64).itemsize
+    data_size = np.product(dims) * np.dtype(np.float32).itemsize
     # This is not documented in the example, but appears to be Astropy's default behaviour
     # Pad the total file size to a multiple of the header block size
     block_size = 2880
-    data_size = block_size * ((data_size // block_size) + 1)
+    data_size = block_size * (((data_size -1) // block_size) + 1)
 
     with open(cubeName, "rb+") as f:
         f.seek(header_size + data_size - 1)
@@ -169,7 +178,7 @@ def check_rms(npArray):
     return [npArray, std]
 
 
-def write_statistics_file(statsDict, conf):
+def write_statistics_file(statsDict, conf, mode="normal"):
     """
     Takes the dictionary with Stokes I and V RMS noise and writes it to a file.
 
@@ -180,7 +189,10 @@ def write_statistics_file(statsDict, conf):
 
     """
     # Outputs a statistics file with estimates for RMS noise in Stokes I and V
-    filepathStatistics = "cube." + conf.input.basename + ".statistics.tab"
+    if mode == "smoothed":
+        filepathStatistics = "cube." + conf.input.basename + ".smoothed.statistics.tab"
+    else:
+        filepathStatistics = "cube." + conf.input.basename + ".statistics.tab"
     legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -197,47 +209,23 @@ def write_statistics_file(statsDict, conf):
         writer.writerows(csvData)
 
 
-# TODO: put into different script
-# def flag_channel_by_indexList(indexList, dataCube):
-#     """
-#     Flaggs alls channels in fits data cube by indexList. TODO: write better
-# 
-# 
-#     """
-#     indexList + LIST_MANUAL_FLAG_BY_INDEX
-#     for i in indexList:
-#         print(i)
-#         info("Fagging channel index %s, which corresponds to the following file (and Stokes QUV respectively): %s", i, PATHLIST_STOKESI[i])
-#         dataCube[0, i, :, :] = np.nan
-#         dataCube[1, i, :, :] = np.nan
-#         dataCube[2, i, :, :] = np.nan
-#         dataCube[3, i, :, :] = np.nan
-#     return dataCube
-# 
-# 
-# def get_flaggedList_by_indexList(indexList):
-#     flaggedList = []
-#     for i, filePathFits in enumerate(PATHLIST_STOKESI):
-#         if i in indexList:
-#             flaggedList.append(True)
-#         else:
-#             flaggedList.append(False)
-#     return flaggedList
 
-
-def fill_cube_with_images(conf):
+def fill_cube_with_images(conf, mode="normal"):
     """
     Fills the empty data cube with fits data.
 
 
     """
-    # TODO: make this less ambigious cube.*.fits
-    cubeName = "cube." + conf.input.basename + ".fits"
+    if mode == "smoothed":
+        cubeName = "cube." + conf.input.basename + "smoothed.fits"
+    else:
+        cubeName = "cube." + conf.input.basename + ".fits"
     info(SEPERATOR)
-    info("Opening data cube: %s", cubeName)
+    info(f"Opening data cube: {cubeName}")
     # TODO: debug: if ignore_missing_end is not true I get an error.
     hudCube = fits.open(cubeName, memmap=True, ignore_missing_end=True, mode="update")
     dataCube = hudCube[0].data
+    highestChannel = int(dataCube.shape[1] + 1)
 
     rmsDict = {}
     rmsDict["chanNo"] = []
@@ -246,7 +234,10 @@ def fill_cube_with_images(conf):
     rmsDict["rmsV"] = []
     rmsDict["maxI"] = []
     rmsDict["flagged"] = []
-    channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+    if mode == "smoothed":
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
+    else:
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
     maxChanNo =  int(get_channelNumber_from_filename(channelFitsfileList[-1], conf.env.markerChannel))
     for ii in range(0, maxChanNo):
         rmsDict['chanNo'].append(ii + 1)
@@ -256,7 +247,6 @@ def fill_cube_with_images(conf):
         # Switch
         stokesVflag = False
 
-        info(SEPERATOR)
         # Try to open file. If channel doesn't exists flag channel
         try:
             hud = fits.open(channelFitsfile, memmap=True)
@@ -290,10 +280,7 @@ def fill_cube_with_images(conf):
             dataCube[2, ii, :, :] = stokesU
 
         elif stokesVflag:
-            dataCube[0, ii, :, :] = np.nan
-            dataCube[1, ii, :, :] = np.nan
-            dataCube[2, ii, :, :] = np.nan
-            dataCube[3, ii, :, :] = np.nan
+            dataCube[:, ii, :, :] = np.nan
             rmsDict["rmsI"].append(np.nan)
             rmsDict["maxI"].append(np.nan)
             rmsDict["flagged"].append(True)
@@ -303,19 +290,56 @@ def fill_cube_with_images(conf):
 
         if hudSwitch:
             hud.close()
+    info(SEPERATOR)
 
 
     hudCube.close()
+    lowestChanNo = get_lowest_channelNo_with_data_in_cube(cubeName)
+    addFitsHeaderDict = {
+            "CRPIX3": lowestChanNo,
+            "OBJECT": str(conf.data.chosenField),
+            "NAXIS3": highestChannel,
+            "CTYPE3": ("FREQ", "")
+            }
+    update_fits_header_of_cube(cubeName, addFitsHeaderDict)
     write_statistics_file(rmsDict, conf)
 
+def move_casalogs_to_dirLogs(conf):
+    '''
+    casataks.casalog.setcasalog doesn't seem to work. It instead puts alls casa
+    logs into the working directory. This is just a dirty fix to put the logs
+    in conf.env.dirLogs
+    '''
+    info(f"Moving casa log files from working directory to {conf.env.dirLogs}")
+    casalogList = glob("casa*.log")
+    for casalog in casalogList:
+        os.replace(casalog, os.path.join(conf.env.dirLogs, casalog))
 
+
+@click.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True,
+))
+#@click.argument('--inputMS', required=False)
+@click.pass_context
 @main_timer
 def main():
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
-    info("Scripts config: {0}".format(conf))
+    info(f"Scripts config: {conf}")
+    move_casalogs_to_dirLogs(conf)
 
-    make_empty_image(conf)
-    fill_cube_with_images(conf)
+    # exploit slurm task ID to run normal buildcube or smoothed buildcube
+    if int(args.slurmArrayTaskId) == 1:
+        make_empty_image(conf, mode="normal")
+        fill_cube_with_images(conf, mode="normal")
+
+    elif int(args.slurmArrayTaskId) == 2:
+        make_empty_image(conf, mode="smoothed")
+        fill_cube_with_images(conf, mode="smoothed")
+
+    else:
+        make_empty_image(conf, mode="normal")
+        fill_cube_with_images(conf, mode="normal")
 
 
 
