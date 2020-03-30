@@ -33,7 +33,7 @@ import click
 import numpy as np
 from astropy.io import fits
 
-from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename, update_CRPIX3, SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube
+from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 
@@ -217,7 +217,7 @@ def fill_cube_with_images(conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        cubeName = "cube." + conf.input.basename + "smoothed.fits"
+        cubeName = "cube." + conf.input.basename + ".smoothed.fits"
     else:
         cubeName = "cube." + conf.input.basename + ".fits"
     info(SEPERATOR)
@@ -302,7 +302,7 @@ def fill_cube_with_images(conf, mode="normal"):
             "CTYPE3": ("FREQ", "")
             }
     update_fits_header_of_cube(cubeName, addFitsHeaderDict)
-    write_statistics_file(rmsDict, conf)
+    write_statistics_file(rmsDict, conf, mode=mode)
 
 def move_casalogs_to_dirLogs(conf):
     '''
@@ -310,10 +310,13 @@ def move_casalogs_to_dirLogs(conf):
     logs into the working directory. This is just a dirty fix to put the logs
     in conf.env.dirLogs
     '''
-    info(f"Moving casa log files from working directory to {conf.env.dirLogs}")
-    casalogList = glob("casa*.log")
-    for casalog in casalogList:
-        os.replace(casalog, os.path.join(conf.env.dirLogs, casalog))
+    try:
+        info(f"Moving casa log files from working directory to {conf.env.dirLogs}")
+        casalogList = glob("casa*.log")
+        for casalog in casalogList:
+            os.replace(casalog, os.path.join(conf.env.dirLogs, casalog))
+    except:
+        pass
 
 
 @click.command(context_settings=dict(
@@ -323,7 +326,8 @@ def move_casalogs_to_dirLogs(conf):
 #@click.argument('--inputMS', required=False)
 @click.pass_context
 @main_timer
-def main():
+def main(ctx):
+    args = DotMap(get_dict_from_click_args(ctx.args))
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     info(f"Scripts config: {conf}")
     move_casalogs_to_dirLogs(conf)

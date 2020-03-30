@@ -18,7 +18,8 @@ from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFI
 from logging import info, error
 import subprocess
 
-IOR_LIMIT_SIGMA = 4 # n sigma over median
+PRE_IOR_LIMIT_SIGMA = 10 # n sigma over median
+IOR_LIMIT_SIGMA = 8 # n sigma over median
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -104,6 +105,8 @@ def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     plt.title(r'Iterative outlier rejection, iteration ' + str(iteration))
     plt.xlabel(r'channel',fontsize=22)
     plt.ylabel(r'RMS [µJybeam$^{-1}$]',fontsize=22)
+    plt.grid(b=True, which='major', linestyle='dotted')
+    plt.minorticks_on()
 
     plt.plot(xData, yData, linestyle='None', marker='.', color='green')
     for i in outlierIndexSet:
@@ -122,12 +125,11 @@ def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     plt.tick_params(axis="x")
     plt.plot(x2Data, yData, linestyle='None', marker='None', color='None')
 
-    plt.grid(b=True, which='major', linestyle='dotted')
-    plt.minorticks_on()
-    sns.despine()
-    plt.savefig(conf.env.dirPlots+'diagnostic-outlier-rejection_iteration'+str(iteration)+'.pdf', bbox_inches = 'tight')
+    #sns.despine()
+    plotPath = conf.env.dirPlots+'diagnostic-outlier-rejection_iteration'+str(iteration)+'.pdf'
+    info(f"Saving plot: {plotPath}")
+    plt.savefig(plotPath, bbox_inches = 'tight')
     #plt.show()
-
 
 
 def get_xyData_after_flagging_by_indexList(indexList, xData, yData):
@@ -139,13 +141,29 @@ def get_xyData_after_flagging_by_indexList(indexList, xData, yData):
             yDataNew.append(yData[i])
     return [xDataNew, yDataNew]
 
+
+def get_flaggedIndexList_by_strong_outliers(xData, yData):
+    '''
+    Removes strong outiers that are PRE_IOR_LIMIT_SIGMA * yStd away from the
+    median.
+    '''
+    yMedian = np.nanmedian(yData)
+    yStd = get_std_via_mad(yData)
+    upperLimit = yMedian + (PRE_IOR_LIMIT_SIGMA * yStd)
+    lowerLimit = yMedian - (PRE_IOR_LIMIT_SIGMA * yStd)
+    flaggedIndexList = []
+    for idx, (x, y) in enumerate(zip(xData, yData)):
+        if y > upperLimit or y < lowerLimit:
+            flaggedIndexList.append(idx)
+    return flaggedIndexList
+
+
 def get_flaggedIndexList_by_ior_with_fit(xData, yData, outlierIndexSet, xDataInitial, yDataInitial):
     flaggedIndexList = []
     initial_guess_abc = [1, 1, 1]
     xDataCleaned, yDataCleaned = remove_nan_and_zero_from_xyData(xData, yData)
     variables, variables_covariance = optimize.curve_fit(h, xDataCleaned, yDataCleaned, initial_guess_abc)
     a, b, c = variables
-    print(variables)
     yDataFit = h(xData, a, b, c)
     yDataFitAllData = h(xDataInitial, a, b, c)
     std = get_std_via_mad(np.array(yDataFit) - np.array(yData))
@@ -185,8 +203,10 @@ def get_outlierIndex_and_fitStats_dict(statsDict, conf):
     xDataInitial = xData
     yDataInitial = yData
     flaggedIndexListOfNanAndZero = get_flaggedIndexList_for_nan_and_zero(xData, yData)
+    # flag far above/below median
+    flaggedIndexListOfStrongOutliers = get_flaggedIndexList_by_strong_outliers(xData, yData)
     xData, yData = get_xyData_after_flagging_by_indexList(flaggedIndexListOfNanAndZero, xDataInitial, yDataInitial)
-    outlierIndexSet = set(flaggedIndexListOfNanAndZero)
+    outlierIndexSet = set(flaggedIndexListOfNanAndZero).union(set(flaggedIndexListOfStrongOutliers))
     tmpOutlierIndexList, std, fitCoefficients = get_flaggedIndexList_by_ior_with_fit(xDataInitial, yDataInitial, outlierIndexSet, xDataInitial, yDataInitial)
 
     outlierSwitch = True
@@ -205,6 +225,8 @@ def get_outlierIndex_and_fitStats_dict(statsDict, conf):
             plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c), std, outlierIndexSet, iteration, conf)
             iteration += 1
         if outlierIndexLengthBefore == outlierIndexLengthAfter:
+            outlierIndexSet = set(tmpOutlierIndexList)
+            plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c), std, outlierIndexSet, iteration, conf)
             outlierSwitch = False
     resultsDict['outlierIndexSet'] = outlierIndexSet
     resultsDict['sigmaRMS'] = std

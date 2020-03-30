@@ -11,6 +11,7 @@ import functools
 import numpy as np
 import inspect
 from logging import info, error
+from astropy.io import fits
 
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
@@ -250,3 +251,38 @@ def get_optimal_taskNo_cpu_mem(conf):
 
 def get_timestamp():
     return datetime.datetime.now().strftime("%Y%m%d")
+
+
+def update_fits_header_of_cube(filepathCube, headerDict):
+    '''
+    '''
+    info(f"Updating header for file: File: {filepathCube}, Update: {headerDict}")
+    with fits.open(filepathCube, memmap=True, ignore_missing_end=True, mode="update") as hud:
+        header = hud[0].header
+        for key, value in headerDict.items():
+            header[key] = value
+
+
+def get_lowest_channelNo_with_data_in_cube(filepathCube):
+    '''
+    '''
+    info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
+    with fits.open(filepathCube, memmap=True) as hud:
+        dataCube = hud[0].data
+        maxIdx = hud[0].data.shape[1]
+        for ii in range(0, maxIdx + 1):
+            if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
+                continue
+            else:
+                chanNo = ii + 1
+                return chanNo
+
+
+def update_CRPIX3(filepathCube):
+    '''
+    Updates the frequency reference channel in the fits header, CRPIX3.
+    '''
+    chanNo = get_lowest_channelNo_with_data_in_cube(filepathCube)
+    headerDict = {"CRPIX3": chanNo}
+    info(f"Updating CRPIX3 value in fits header: {filepathCube}, {headerDict}")
+    update_fits_header_of_cube(filepathCube, headerDict)
