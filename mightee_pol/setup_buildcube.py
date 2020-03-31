@@ -161,11 +161,16 @@ def write_all_sbatch_files(conf):
     '''
     # split
     slurmArrayLength = str(sum([len(x) for x in conf.data.predictedOutputChannels]))
+    # limit the split jobs to run in parallel, since they seem to cause I/O trouble.
+    if 100 < int(slurmArrayLength):
+        slurmArrayMaxTaks = 100
+    else:
+        slurmArrayMaxTaks = slurmArrayLength
     basename = "cube_split"
     filename = basename + ".sbatch"
     info(f"Writing sbtach file: {filename}")
     sbatchDict = {
-        'array': f"1-{slurmArrayLength}%{int(slurmArrayLength)//4}",
+        'array': f"1-{slurmArrayLength}%{slurmArrayMaxTaks}",
         'job-name': basename,
         'cpus-per-task': 1,
         'mem': "10GB",
@@ -178,6 +183,8 @@ def write_all_sbatch_files(conf):
     # tclean
     slurmArrayLength = str(len(set(itertools.chain(*conf.data.predictedOutputChannels))))
     tcleanSlurm = get_optimal_taskNo_cpu_mem(conf)
+    if int(tcleanSlurm['maxTasks']) > int(slurmArrayLength):
+        tcleanSlurm['maxTasks'] = slurmArrayLength
     basename = "cube_tclean"
     filename = basename + ".sbatch"
     info(f"Writing sbtach file: {filename}")
@@ -341,7 +348,7 @@ def main(ctx):
         command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && "
         for runScript in conf.env.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
-            command += f"echo SLURMID: $SLURMID;SLURMID=$(sbatch --dependency=afterok:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
+            command += f"echo SLURMID: $SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
         command += "Slurm jobs submitted!"
         subprocess.run(command, shell=True)
         return None

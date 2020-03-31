@@ -130,9 +130,9 @@ def make_empty_image(conf, mode="normal"):
         header["NAXIS%d" % i] = dim
 
     if mode == "smoothed":
-        cubeName = "cube." + conf.input.basename + ".smoothed.fits"
+        cubeName = conf.input.basename + ".cube.smoothed.fits"
     else:
-        cubeName = "cube." + conf.input.basename + ".fits"
+        cubeName = conf.input.basename + ".cube.fits"
 
     header.tofile(cubeName, overwrite=True)
 
@@ -190,9 +190,9 @@ def write_statistics_file(statsDict, conf, mode="normal"):
     """
     # Outputs a statistics file with estimates for RMS noise in Stokes I and V
     if mode == "smoothed":
-        filepathStatistics = "cube." + conf.input.basename + ".smoothed.statistics.tab"
+        filepathStatistics = conf.input.basename + ".cube.smoothed.statistics.tab"
     else:
-        filepathStatistics = "cube." + conf.input.basename + ".statistics.tab"
+        filepathStatistics = conf.input.basename + ".cube.statistics.tab"
     legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -217,9 +217,9 @@ def fill_cube_with_images(conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        cubeName = "cube." + conf.input.basename + ".smoothed.fits"
+        cubeName = conf.input.basename + ".cube.smoothed.fits"
     else:
-        cubeName = "cube." + conf.input.basename + ".fits"
+        cubeName = conf.input.basename + ".cube.fits"
     info(SEPERATOR)
     info(f"Opening data cube: {cubeName}")
     # TODO: debug: if ignore_missing_end is not true I get an error.
@@ -299,7 +299,8 @@ def fill_cube_with_images(conf, mode="normal"):
             "CRPIX3": lowestChanNo,
             "OBJECT": str(conf.data.chosenField),
             "NAXIS3": highestChannel,
-            "CTYPE3": ("FREQ", "")
+            "CTYPE3": ("FREQ", ""),
+            "COMMENT": "Created by IDIA Pipeline"
             }
     update_fits_header_of_cube(cubeName, addFitsHeaderDict)
     write_statistics_file(rmsDict, conf, mode=mode)

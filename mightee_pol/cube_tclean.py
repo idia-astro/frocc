@@ -120,7 +120,7 @@ def main(ctx):
     channelNumber = get_channelNumber_from_slurmArrayTaskId(args.slurmArrayTaskId, conf)
 
     # TODO: help: re-definition of casalog not working.
-    casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
+    # casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
 
     channelInputMS = glob(f"{conf.env.dirVis}/*{conf.env.markerChannel}{channelNumber}*")
     call_tclean(channelInputMS, channelNumber, conf)

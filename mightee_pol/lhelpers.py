@@ -132,29 +132,31 @@ def main_timer(func):
 
 
 def write_sbtach_file(filename, command, sbatchDict={}):
-    defaultDict = {
-            'array': "1-30%30",
-            'nodes': 1,
-            'ntasks-per-node': 1,
-            'cpus-per-task': 4,
-            'mem': "29GB",
-            'job-name': "NoName",
-            'output': "/logs/NoName-%A-%a.out",
-            'error': "/logs/NoName-%A-%a.err",
-            'partition': "Main",
-            }
-    # update default with provided dict if not empty
-    if sbatchDict:
-        defaultDict.update(sbatchDict)
-    with open(filename, 'w') as f:
-        sbatchScript = "#!/bin/bash"
-        for key, value in defaultDict.items():
-            sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
+    # TODO: better put this if-else to check which scripts should be created somewhere else
+    if filename.replace(".sbatch", ".py") in conf.env.runScripts:
+        defaultDict = {
+                'array': "1-30%30",
+                'nodes': 1,
+                'ntasks-per-node': 1,
+                'cpus-per-task': 4,
+                'mem': "29GB",
+                'job-name': "NoName",
+                'output': "/logs/NoName-%A-%a.out",
+                'error': "/logs/NoName-%A-%a.err",
+                'partition': "Main",
+                }
+        # update default with provided dict if not empty
+        if sbatchDict:
+            defaultDict.update(sbatchDict)
+        with open(filename, 'w') as f:
+            sbatchScript = "#!/bin/bash"
+            for key, value in defaultDict.items():
+                sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
 
-        sbatchScript += "\n\ncat /etc/hostname" 
-        sbatchScript += "\nulimit -a" 
-        sbatchScript += "\n\n" + command
-        f.write(sbatchScript)
+            sbatchScript += "\n\ncat /etc/hostname" 
+            sbatchScript += "\nulimit -a" 
+            sbatchScript += "\n\n" + command
+            f.write(sbatchScript)
 
 #write_sbtach_file("test.sbtach", "echo hi", {'job-name': "testestest", 'hi': 3})
 
@@ -221,7 +223,7 @@ def get_basename_from_path(filepath):
     # get basename frompath
     basename = os.path.basename(basename)
     # remove file extension
-    basename = os.path.splitext(basename)[0]
+    basename = os.path.splitext(basename)[0] + "." + get_timestamp()
     return basename
 
 def get_optimal_taskNo_cpu_mem(conf):

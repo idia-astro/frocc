@@ -57,7 +57,7 @@ def write_statistics_file(statsDict, conf):
        Dictionary with lists for Stokes I and V rms noise
 
     """
-    filepathStatistics = "cube." + conf.input.basename + ".statistics.ior-flagged.tab"
+    filepathStatistics = conf.input.basename + ".cube.statistics.ior-flagged.tab"
     legendList = ["chanNo", "frequency [MHz]",  "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]", "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -97,38 +97,47 @@ def h(x, a, b, c):
 def get_yDataFit(xData, a, b, c):
     return h(xData, a, b, c)
 
+
 def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     xData = statsDict['chanNo']
     x2Data = statsDict['frequency']
     yData = statsDict['rmsStokesV']
-    plt.figure(figsize=(16,8))
-    plt.title(r'Iterative outlier rejection, iteration ' + str(iteration))
-    plt.xlabel(r'channel',fontsize=22)
-    plt.ylabel(r'RMS [µJybeam$^{-1}$]',fontsize=22)
-    plt.grid(b=True, which='major', linestyle='dotted')
-    plt.minorticks_on()
+    fig, ax1 = plt.subplots(figsize=(16,8))
+    ax1.set_title(r'Iterative outlier rejection, iteration ' + str(iteration))
+    ax1.set_xlabel(r'channel',fontsize=22)
+    ax1.set_ylabel(r'RMS [µJ ybeam$^{-1}$]',fontsize=22)
+    ax1.grid(b=True, which='major', linestyle='dashed')
+    ax1.grid(b=True, which='minor', linestyle='dotted')
+    ax1.minorticks_on()
 
-    plt.plot(xData, yData, linestyle='None', marker='.', color='green')
+    ax1.plot(xData, yData, linestyle='None', marker='.', color='green', label="Unflagged")
+    # only for the label
+    ax1.plot(xData[0], yData[0], linestyle='None', marker='.', color='red', label="Flagged")
     for i in outlierIndexSet:
-        plt.plot(xData[i], yData[i], linestyle='None', marker='.', color='red')
+        ax1.plot(xData[i], yData[i], linestyle='None', marker='.', color='red')
 
 
-    plt.plot(xData, yDataFit, linestyle='-', marker='', color='blue')
+    ax1.plot(xData, yDataFit, linestyle='-', marker='', color='blue', alpha=0.7, label="Best fit")
 
-    plt.plot(xData, yDataFit + IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue')
-    plt.plot(xData, yDataFit - IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue')
+    ax1.plot(xData, yDataFit + IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue', alpha=0.7, label=r'$\pm$'+str(IOR_LIMIT_SIGMA)+r'$\sigma$')
+    ax1.plot(xData, yDataFit - IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue', alpha=0.7)
 
+    ax1.legend(frameon=True, fancybox=True)
     # second x-axis on top, which needs to share (twiny) the y-axis
     # TODO: ask Krishna: second x-axis to top
-    plt.twiny()
-    plt.xlabel(r'frequency [MHz]',fontsize=22)
-    plt.tick_params(axis="x")
-    plt.plot(x2Data, yData, linestyle='None', marker='None', color='None')
+    ax2 = ax1.twiny()
+    ax2.set_xlabel(r'frequency [MHz]',fontsize=22)
+    ax2.tick_params(axis="x")
+    ax2.plot(x2Data, yData, linestyle='None', marker='None', color='None')
 
-    #sns.despine()
-    plotPath = conf.env.dirPlots+'diagnostic-outlier-rejection_iteration'+str(iteration)+'.pdf'
+    #PDF
+    plotPath = conf.env.dirPlots+conf.input.basename+'.diagnostic-ior-'+str(iteration)+'.pdf'
     info(f"Saving plot: {plotPath}")
-    plt.savefig(plotPath, bbox_inches = 'tight')
+    fig.savefig(plotPath, bbox_inches = 'tight')
+    # PNG
+    plotPath = conf.env.dirPlots+conf.input.basename+'.diagnostic-ior-'+str(iteration)+'.png'
+    info(f"Saving plot: {plotPath}")
+    fig.savefig(plotPath, bbox_inches = 'tight')
     #plt.show()
 
 
@@ -251,7 +260,7 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
 
 
     """
-    cubeName = "cube." + conf.input.basename + ".fits"
+    cubeName = conf.input.basename + ".cube.fits"
     info("Flagging channel Number: {0} in {1}".format(chanNoList, cubeName))
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
@@ -277,16 +286,14 @@ def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
     '''
     chanNoList = []
     for chanNo, flagged in zip(initialStatsDict['chanNo'], initialStatsDict['flagged']):
-        print(chanNo, flagged)
         if not flagged and (chanNo in outlierChanNoList):
             chanNoList.append(chanNo)
-    print(chanNoList)
     return chanNoList
 
 @main_timer
 def main():
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
-    filepathStatistics = "cube." + conf.input.basename + ".statistics.tab"
+    filepathStatistics = conf.input.basename + ".cube.statistics.tab"
     statsDict = get_dict_from_tabFile(filepathStatistics)
     initialStatsDict = dict(statsDict)  # make a deep copy
     resultsDict = get_outlierIndex_and_fitStats_dict(statsDict, conf)
