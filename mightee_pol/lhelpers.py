@@ -133,8 +133,8 @@ def main_timer(func):
     return wrapper
 
 
-def write_sbtach_file(filename, command, sbatchDict={}):
-    # TODO: better put this if-else to check which scripts should be created somewhere else
+def write_sbtach_file(filename, command, conf, sbatchDict={}):
+    # TODO: better put this "if" to check which scripts should be created somewhere else
     if filename.replace(".sbatch", ".py") in conf.env.runScripts:
         defaultDict = {
                 'array': "1-30%30",

@@ -3,7 +3,7 @@ import setuptools
 import sys
 
 # not working
-sys.executable = '/usr/bin/env python3'
+sys.executable = "/usr/bin/env python3"
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -35,7 +35,7 @@ setuptools.setup(
     # not working
     options = {
         'build_scripts': {
-            'executable': '/usr/bin/env python3',
+            'executable': "/usr/bin/env python3",
         },
     },
 

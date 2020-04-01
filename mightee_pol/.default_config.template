@@ -72,20 +72,24 @@ dirRMSYdata = "rmsy-data/"
 #dirList = ["logs/", "images/", "vis/", "plots/", "rmsy-plots/", "rmsy-data/"]
 dirList = ["logs/", "images/", "vis/", "plots/"]
 
+# string marker for channel files
 markerChannel = ".chan"
 
+# path to hdf5Converter
 hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
 
 # Also used for sbatch dependency, therfore list order matters!
 runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py"]
 
-prefixSingularity = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 1 --time 1:00:00 --pty singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
+#prefixSingularity = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 1 --time 1:00:00 --pty singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
+prefixSingularity = "singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
 #prefixSingularity = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 1 --time 1:00:00 --pty singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 #prefixSingularity = "singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 #prefixSingularity = "singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
 
 # The container and headnode have different python3 paths, hence the python3 $HOME...
-commandSingularity = f"python3 {expanduser('~')}/.local/bin/setup_buildcube"
+# CAUTION ${HOME} does not get resolved by singularity. A string.replace() in setup_buildcube_wrapper.py is done to fix that.
+commandSingularity = "python ${HOME}/.local/bin/setup_buildcube"
 #env = {"PATH": "${PATH}:${HOME}/.local/bin/"}
 
 

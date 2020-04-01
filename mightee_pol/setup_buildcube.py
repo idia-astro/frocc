@@ -186,7 +186,7 @@ def write_all_sbatch_files(conf):
         'error': f"logs/{basename}-%A-%a.err",
         }
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
-    write_sbtach_file(filename, command, sbatchDict)
+    write_sbtach_file(filename, command, conf, sbatchDict)
 
     # tclean
     slurmArrayLength = str(len(set(itertools.chain(*conf.data.predictedOutputChannels))))
@@ -205,7 +205,7 @@ def write_all_sbatch_files(conf):
         'error': f"logs/{basename}-%A-%a.err",
         }
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
-    write_sbtach_file(filename, command, sbatchDict)
+    write_sbtach_file(filename, command, conf, sbatchDict)
 
     # buildcube
     if conf.input.smoothbeam:
@@ -224,7 +224,7 @@ def write_all_sbatch_files(conf):
             'mem': "50GB",
             }
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
-    write_sbtach_file(filename, command, sbatchDict)
+    write_sbtach_file(filename, command, conf, sbatchDict)
 
     # ior flagging
     basename = "cube_ior_flagging"
@@ -239,7 +239,7 @@ def write_all_sbatch_files(conf):
             'mem': "100GB",
             }
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
-    write_sbtach_file(filename, command, sbatchDict)
+    write_sbtach_file(filename, command, conf, sbatchDict)
 
     # generate rmsy input data
     basename = "cube_generate_rmsy_input_data"
@@ -254,7 +254,7 @@ def write_all_sbatch_files(conf):
             'mem': "100GB",
             }
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
-    write_sbtach_file(filename, command, sbatchDict)
+    write_sbtach_file(filename, command, conf, sbatchDict)
 
     # do_rmsy
     basename = "cube_do_rmsy"
@@ -269,7 +269,7 @@ def write_all_sbatch_files(conf):
             'mem': "10GB",
             }
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
-    write_sbtach_file(filename, command, sbatchDict)
+    write_sbtach_file(filename, command, conf, sbatchDict)
 
 def copy_runscripts(conf):
     '''
@@ -353,12 +353,16 @@ def main(ctx):
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
         args = DotMap(get_dict_from_click_args(ctx.args))
         firstRunScript = conf.env.runScripts[0].replace('.py', '.sbatch')
-        command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && "
+        command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && echo SLURMID: "
         for runScript in conf.env.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
-            command += f"echo SLURMID: $SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
-        command += "Slurm jobs submitted!"
-        subprocess.run(command, shell=True)
+            command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo $SLURMID &&"
+        command += "echo | Slurm jobs submitted! &&"
+        command += ""
+        sbatchResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        info(sbatchResult.stdout.replace("\n", " "))
+        if sbatchResult.stderr:
+            error(sbatchResult.stderr)
         return None
 
 
