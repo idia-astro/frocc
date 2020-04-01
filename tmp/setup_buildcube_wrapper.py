@@ -20,6 +20,12 @@ os.environ['LANG'] = "C-UTF-8"
 
 import click
 import subprocess
+<<<<<<< Updated upstream
+import os
+from .lhelpers import main_timer, get_config_in_dot_notation
+from .setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL
+
+=======
 from os.path import expanduser
 from .lhelpers import main_timer
 
@@ -29,6 +35,7 @@ from .lhelpers import main_timer
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 COMMAND = f"python3 {expanduser('~')}/.local/bin/setup_buildcube"
+>>>>>>> Stashed changes
 
 @click.command(context_settings=dict(
     ignore_unknown_options=True,

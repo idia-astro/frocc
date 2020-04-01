@@ -1,4 +1,7 @@
+<<<<<<< Updated upstream
 #!python3
+=======
+>>>>>>> Stashed changes
 # -*- coding: utf-8 -*-
 import sys
 import logging
@@ -15,9 +18,14 @@ from logging import info, error, warning
 from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
 import mightee_pol
 
+<<<<<<< Updated upstream
 os.environ['LC_ALL'] = "C.UTF-8"
 os.environ['LANG'] = "C.UTF-8"
 
+=======
+os.environ['LC_ALL'] = "C-UTF-8"
+os.environ['LANG'] = "C-UTF-8"
+>>>>>>> Stashed changes
 # need to be instaled in container. Right now linkt with $PYTHONPATH
 import click
 
