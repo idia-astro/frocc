@@ -28,11 +28,12 @@ import datetime
 from glob import glob
 import re
 import sys
+import click
 
 import numpy as np
 from astropy.io import fits
 
-from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename, update_CRPIX3, SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube
+from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 
 
@@ -48,7 +49,7 @@ logging.basicConfig(
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def get_and_add_custom_header(header, zdim, conf):
+def get_and_add_custom_header(header, zdim, conf, mode="normal"):
     """
     Gets header from fits file and updates the cube header.
 
@@ -65,7 +66,11 @@ def get_and_add_custom_header(header, zdim, conf):
 
     """
     info(SEPERATOR)
-    lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.fits"))[0]
+    if mode == "smoothed":
+        lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))[0]
+    else:
+        lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.fits"))[0]
+
     info("Getting header for data cube from: %s", lowestChannelFitsfile)
     with fits.open(lowestChannelFitsfile, memmap=True) as hud:
         header = hud[0].header
@@ -76,7 +81,7 @@ def get_and_add_custom_header(header, zdim, conf):
     return header
 
 
-def make_empty_image(conf):
+def make_empty_image(conf, mode="normal"):
     """
     Generate an empty dummy fits data cube.
 
@@ -84,7 +89,11 @@ def make_empty_image(conf):
     resulting data cube can exceed the machine's RAM.
 
     """
-    channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+    if mode == "smoothed":
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
+    else:
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+        
     lowestChannelFitsfile = channelFitsfileList[0]
     highestChannelFitsfile = channelFitsfileList[-1]
     info(SEPERATOR)
@@ -116,11 +125,14 @@ def make_empty_image(conf):
     hdu = fits.PrimaryHDU(data=dummy_data)
 
     header = hdu.header
-    header = get_and_add_custom_header(header, zdim, conf)
+    header = get_and_add_custom_header(header, zdim, conf, mode=mode)
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
 
-    cubeName = "cube." + conf.input.basename + ".fits"
+    if mode == "smoothed":
+        cubeName = conf.input.basename + ".cube.smoothed.fits"
+    else:
+        cubeName = conf.input.basename + ".cube.fits"
 
     header.tofile(cubeName, overwrite=True)
 
@@ -166,7 +178,7 @@ def check_rms(npArray):
     return [npArray, std]
 
 
-def write_statistics_file(statsDict, conf):
+def write_statistics_file(statsDict, conf, mode="normal"):
     """
     Takes the dictionary with Stokes I and V RMS noise and writes it to a file.
 
@@ -177,7 +189,10 @@ def write_statistics_file(statsDict, conf):
 
     """
     # Outputs a statistics file with estimates for RMS noise in Stokes I and V
-    filepathStatistics = "cube." + conf.input.basename + ".statistics.tab"
+    if mode == "smoothed":
+        filepathStatistics = conf.input.basename + ".cube.smoothed.statistics.tab"
+    else:
+        filepathStatistics = conf.input.basename + ".cube.statistics.tab"
     legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -194,42 +209,17 @@ def write_statistics_file(statsDict, conf):
         writer.writerows(csvData)
 
 
-# TODO: put into different script
-# def flag_channel_by_indexList(indexList, dataCube):
-#     """
-#     Flaggs alls channels in fits data cube by indexList. TODO: write better
-# 
-# 
-#     """
-#     indexList + LIST_MANUAL_FLAG_BY_INDEX
-#     for i in indexList:
-#         print(i)
-#         info("Fagging channel index %s, which corresponds to the following file (and Stokes QUV respectively): %s", i, PATHLIST_STOKESI[i])
-#         dataCube[0, i, :, :] = np.nan
-#         dataCube[1, i, :, :] = np.nan
-#         dataCube[2, i, :, :] = np.nan
-#         dataCube[3, i, :, :] = np.nan
-#     return dataCube
-# 
-# 
-# def get_flaggedList_by_indexList(indexList):
-#     flaggedList = []
-#     for i, filePathFits in enumerate(PATHLIST_STOKESI):
-#         if i in indexList:
-#             flaggedList.append(True)
-#         else:
-#             flaggedList.append(False)
-#     return flaggedList
 
-
-def fill_cube_with_images(conf):
+def fill_cube_with_images(conf, mode="normal"):
     """
     Fills the empty data cube with fits data.
 
 
     """
-    # TODO: make this less ambigious cube.*.fits
-    cubeName = "cube." + conf.input.basename + ".fits"
+    if mode == "smoothed":
+        cubeName = conf.input.basename + ".cube.smoothed.fits"
+    else:
+        cubeName = conf.input.basename + ".cube.fits"
     info(SEPERATOR)
     info(f"Opening data cube: {cubeName}")
     # TODO: debug: if ignore_missing_end is not true I get an error.
@@ -244,7 +234,10 @@ def fill_cube_with_images(conf):
     rmsDict["rmsV"] = []
     rmsDict["maxI"] = []
     rmsDict["flagged"] = []
-    channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+    if mode == "smoothed":
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
+    else:
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
     maxChanNo =  int(get_channelNumber_from_filename(channelFitsfileList[-1], conf.env.markerChannel))
     for ii in range(0, maxChanNo):
         rmsDict['chanNo'].append(ii + 1)
@@ -304,12 +297,13 @@ def fill_cube_with_images(conf):
     lowestChanNo = get_lowest_channelNo_with_data_in_cube(cubeName)
     addFitsHeaderDict = {
             "CRPIX3": lowestChanNo,
-            "OBJECT": str(conf.data.field),
+            "OBJECT": str(conf.data.chosenField),
             "NAXIS3": highestChannel,
-            "CTYPE3": ("FREQ", "")
+            "CTYPE3": ("FREQ", ""),
+            "COMMENT": "Created by IDIA Pipeline"
             }
     update_fits_header_of_cube(cubeName, addFitsHeaderDict)
-    write_statistics_file(rmsDict, conf)
+    write_statistics_file(rmsDict, conf, mode=mode)
 
 def move_casalogs_to_dirLogs(conf):
     '''
@@ -317,20 +311,40 @@ def move_casalogs_to_dirLogs(conf):
     logs into the working directory. This is just a dirty fix to put the logs
     in conf.env.dirLogs
     '''
-    info(f"Moving casa log files from working directory to {conf.env.dirLogs}")
-    casalogList = glob("casa*.log")
-    for casalog in casalogList:
-        os.replace(casalog, os.path.join(conf.env.dirLogs, casalog))
+    try:
+        info(f"Moving casa log files from working directory to {conf.env.dirLogs}")
+        casalogList = glob("casa*.log")
+        for casalog in casalogList:
+            os.replace(casalog, os.path.join(conf.env.dirLogs, casalog))
+    except:
+        pass
 
 
+@click.command(context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True,
+))
+#@click.argument('--inputMS', required=False)
+@click.pass_context
 @main_timer
-def main():
+def main(ctx):
+    args = DotMap(get_dict_from_click_args(ctx.args))
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     info(f"Scripts config: {conf}")
-
     move_casalogs_to_dirLogs(conf)
-    make_empty_image(conf)
-    fill_cube_with_images(conf)
+
+    # exploit slurm task ID to run normal buildcube or smoothed buildcube
+    if int(args.slurmArrayTaskId) == 1:
+        make_empty_image(conf, mode="normal")
+        fill_cube_with_images(conf, mode="normal")
+
+    elif int(args.slurmArrayTaskId) == 2:
+        make_empty_image(conf, mode="smoothed")
+        fill_cube_with_images(conf, mode="smoothed")
+
+    else:
+        make_empty_image(conf, mode="normal")
+        fill_cube_with_images(conf, mode="normal")
 
 
 

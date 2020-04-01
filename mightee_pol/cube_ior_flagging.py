@@ -19,7 +19,8 @@ from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFI
 from logging import info, error
 import subprocess
 
-IOR_LIMIT_SIGMA = 5 # n sigma over median
+PRE_IOR_LIMIT_SIGMA = 10 # n sigma over median
+IOR_LIMIT_SIGMA = 8 # n sigma over median
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -56,7 +57,7 @@ def write_statistics_file(statsDict, conf):
        Dictionary with lists for Stokes I and V rms noise
 
     """
-    filepathStatistics = "cube." + conf.input.basename + ".statistics.ior-flagged.tab"
+    filepathStatistics = conf.input.basename + ".cube.statistics.ior-flagged.tab"
     legendList = ["chanNo", "frequency [MHz]",  "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]", "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -96,38 +97,48 @@ def h(x, a, b, c):
 def get_yDataFit(xData, a, b, c):
     return h(xData, a, b, c)
 
+
 def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     xData = statsDict['chanNo']
     x2Data = statsDict['frequency']
     yData = statsDict['rmsStokesV']
-    plt.figure(figsize=(16,8))
-    plt.title(r'Iterative outlier rejection, iteration ' + str(iteration))
-    plt.xlabel(r'channel',fontsize=22)
-    plt.ylabel(r'RMS [µJybeam$^{-1}$]',fontsize=22)
+    fig, ax1 = plt.subplots(figsize=(16,8))
+    ax1.set_title(r'Iterative outlier rejection, iteration ' + str(iteration))
+    ax1.set_xlabel(r'channel',fontsize=22)
+    ax1.set_ylabel(r'RMS [µJ ybeam$^{-1}$]',fontsize=22)
+    ax1.grid(b=True, which='major', linestyle='dashed')
+    ax1.grid(b=True, which='minor', linestyle='dotted')
+    ax1.minorticks_on()
 
-    plt.plot(xData, yData, linestyle='None', marker='.', color='green')
+    ax1.plot(xData, yData, linestyle='None', marker='.', color='green', label="Unflagged")
+    # only for the label
+    ax1.plot(xData[0], yData[0], linestyle='None', marker='.', color='red', label="Flagged")
     for i in outlierIndexSet:
-        plt.plot(xData[i], yData[i], linestyle='None', marker='.', color='red')
+        ax1.plot(xData[i], yData[i], linestyle='None', marker='.', color='red')
 
 
-    plt.plot(xData, yDataFit, linestyle='-', marker='', color='blue')
+    ax1.plot(xData, yDataFit, linestyle='-', marker='', color='blue', alpha=0.7, label="Best fit")
 
-    plt.plot(xData, yDataFit + IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue')
-    plt.plot(xData, yDataFit - IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue')
+    ax1.plot(xData, yDataFit + IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue', alpha=0.7, label=r'$\pm$'+str(IOR_LIMIT_SIGMA)+r'$\sigma$')
+    ax1.plot(xData, yDataFit - IOR_LIMIT_SIGMA * std , linestyle='dashed', marker='', color='blue', alpha=0.7)
 
+    ax1.legend(frameon=True, fancybox=True)
     # second x-axis on top, which needs to share (twiny) the y-axis
     # TODO: ask Krishna: second x-axis to top
-    plt.twiny()
-    plt.xlabel(r'frequency [MHz]',fontsize=22)
-    plt.tick_params(axis="x")
-    plt.plot(x2Data, yData, linestyle='None', marker='None', color='None')
+    ax2 = ax1.twiny()
+    ax2.set_xlabel(r'frequency [MHz]',fontsize=22)
+    ax2.tick_params(axis="x")
+    ax2.plot(x2Data, yData, linestyle='None', marker='None', color='None')
 
-    plt.grid(b=True, which='major', linestyle='dotted')
-    plt.minorticks_on()
-    sns.despine()
-    plt.savefig(conf.env.dirPlots+'diagnostic-outlier-rejection_iteration'+str(iteration)+'.pdf', bbox_inches = 'tight')
+    #PDF
+    plotPath = conf.env.dirPlots+conf.input.basename+'.diagnostic-ior-'+str(iteration)+'.pdf'
+    info(f"Saving plot: {plotPath}")
+    fig.savefig(plotPath, bbox_inches = 'tight')
+    # PNG
+    plotPath = conf.env.dirPlots+conf.input.basename+'.diagnostic-ior-'+str(iteration)+'.png'
+    info(f"Saving plot: {plotPath}")
+    fig.savefig(plotPath, bbox_inches = 'tight')
     #plt.show()
-
 
 
 def get_xyData_after_flagging_by_indexList(indexList, xData, yData):
@@ -139,13 +150,29 @@ def get_xyData_after_flagging_by_indexList(indexList, xData, yData):
             yDataNew.append(yData[i])
     return [xDataNew, yDataNew]
 
+
+def get_flaggedIndexList_by_strong_outliers(xData, yData):
+    '''
+    Removes strong outiers that are PRE_IOR_LIMIT_SIGMA * yStd away from the
+    median.
+    '''
+    yMedian = np.nanmedian(yData)
+    yStd = get_std_via_mad(yData)
+    upperLimit = yMedian + (PRE_IOR_LIMIT_SIGMA * yStd)
+    lowerLimit = yMedian - (PRE_IOR_LIMIT_SIGMA * yStd)
+    flaggedIndexList = []
+    for idx, (x, y) in enumerate(zip(xData, yData)):
+        if y > upperLimit or y < lowerLimit:
+            flaggedIndexList.append(idx)
+    return flaggedIndexList
+
+
 def get_flaggedIndexList_by_ior_with_fit(xData, yData, outlierIndexSet, xDataInitial, yDataInitial):
     flaggedIndexList = []
     initial_guess_abc = [1, 1, 1]
     xDataCleaned, yDataCleaned = remove_nan_and_zero_from_xyData(xData, yData)
     variables, variables_covariance = optimize.curve_fit(h, xDataCleaned, yDataCleaned, initial_guess_abc)
     a, b, c = variables
-    print(variables)
     yDataFit = h(xData, a, b, c)
     yDataFitAllData = h(xDataInitial, a, b, c)
     std = get_std_via_mad(np.array(yDataFit) - np.array(yData))
@@ -185,8 +212,10 @@ def get_outlierIndex_and_fitStats_dict(statsDict, conf):
     xDataInitial = xData
     yDataInitial = yData
     flaggedIndexListOfNanAndZero = get_flaggedIndexList_for_nan_and_zero(xData, yData)
+    # flag far above/below median
+    flaggedIndexListOfStrongOutliers = get_flaggedIndexList_by_strong_outliers(xData, yData)
     xData, yData = get_xyData_after_flagging_by_indexList(flaggedIndexListOfNanAndZero, xDataInitial, yDataInitial)
-    outlierIndexSet = set(flaggedIndexListOfNanAndZero)
+    outlierIndexSet = set(flaggedIndexListOfNanAndZero).union(set(flaggedIndexListOfStrongOutliers))
     tmpOutlierIndexList, std, fitCoefficients = get_flaggedIndexList_by_ior_with_fit(xDataInitial, yDataInitial, outlierIndexSet, xDataInitial, yDataInitial)
 
     outlierSwitch = True
@@ -205,6 +234,8 @@ def get_outlierIndex_and_fitStats_dict(statsDict, conf):
             plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c), std, outlierIndexSet, iteration, conf)
             iteration += 1
         if outlierIndexLengthBefore == outlierIndexLengthAfter:
+            outlierIndexSet = set(tmpOutlierIndexList)
+            plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c), std, outlierIndexSet, iteration, conf)
             outlierSwitch = False
     resultsDict['outlierIndexSet'] = outlierIndexSet
     resultsDict['sigmaRMS'] = std
@@ -229,7 +260,7 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
 
 
     """
-    cubeName = "cube." + conf.input.basename + ".fits"
+    cubeName = conf.input.basename + ".cube.fits"
     info("Flagging channel Number: {0} in {1}".format(chanNoList, cubeName))
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
@@ -259,14 +290,14 @@ def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
     '''
     chanNoList = []
     for chanNo, flagged in zip(initialStatsDict['chanNo'], initialStatsDict['flagged']):
-        if flagged and (chanNo in outlierChanNoList):
+        if not flagged and (chanNo in outlierChanNoList):
             chanNoList.append(chanNo)
     return chanNoList
 
 @main_timer
 def main():
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
-    filepathStatistics = "cube." + conf.input.basename + ".statistics.tab"
+    filepathStatistics = conf.input.basename + ".cube.statistics.tab"
     statsDict = get_dict_from_tabFile(filepathStatistics)
     initialStatsDict = dict(statsDict)  # make a deep copy
     resultsDict = get_outlierIndex_and_fitStats_dict(statsDict, conf)

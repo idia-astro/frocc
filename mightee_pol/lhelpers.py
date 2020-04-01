@@ -5,6 +5,7 @@ Convinience functions and classes.
 
 import configparser
 import datetime
+import os
 import ast
 import logging
 import functools
@@ -12,6 +13,7 @@ import numpy as np
 import inspect
 from astropy.io import fits
 from logging import info, error
+from astropy.io import fits
 
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
@@ -132,28 +134,31 @@ def main_timer(func):
 
 
 def write_sbtach_file(filename, command, sbatchDict={}):
-    defaultDict = {
-            'array': "1-30%30",
-            'nodes': 1,
-            'ntasks-per-node': 1,
-            'cpus-per-task': 4,
-            'mem': "29GB",
-            'job-name': "NoName",
-            'output': "/logs/NoName-%A-%a.out",
-            'error': "/logs/NoName-%A-%a.err",
-            'partition': "Main",
-            }
-    # update default with provided dict if not empty
-    if sbatchDict:
-        defaultDict.update(sbatchDict)
-    with open(filename, 'w') as f:
-        sbatchScript = "#!/bin/bash"
-        for key, value in defaultDict.items():
-            sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
+    # TODO: better put this if-else to check which scripts should be created somewhere else
+    if filename.replace(".sbatch", ".py") in conf.env.runScripts:
+        defaultDict = {
+                'array': "1-30%30",
+                'nodes': 1,
+                'ntasks-per-node': 1,
+                'cpus-per-task': 4,
+                'mem': "29GB",
+                'job-name': "NoName",
+                'output': "/logs/NoName-%A-%a.out",
+                'error': "/logs/NoName-%A-%a.err",
+                'partition': "Main",
+                }
+        # update default with provided dict if not empty
+        if sbatchDict:
+            defaultDict.update(sbatchDict)
+        with open(filename, 'w') as f:
+            sbatchScript = "#!/bin/bash"
+            for key, value in defaultDict.items():
+                sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
 
-        sbatchScript += "\n\ncat /etc/hostname" 
-        sbatchScript += "\n\n" + command
-        f.write(sbatchScript)
+            sbatchScript += "\n\ncat /etc/hostname" 
+            sbatchScript += "\nulimit -a" 
+            sbatchScript += "\n\n" + command
+            f.write(sbatchScript)
 
 #write_sbtach_file("test.sbtach", "echo hi", {'job-name': "testestest", 'hi': 3})
 
@@ -207,6 +212,51 @@ def get_firstFreq(conf):
     firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
     return firstFreq
 
+def get_basename_from_path(filepath):
+    '''
+    '''
+    try:
+        isinstance(eval(filepath), list)
+    except:
+        # convert string to list, split at, strip whitespace and all back to a string again to write it to config
+        filepath = str([x.strip() for x in list(filter(None, filepath.split(",")))])
+    # remove "/" from end of path
+    basename = eval(filepath)[0].strip("/")
+    # get basename frompath
+    basename = os.path.basename(basename)
+    # remove file extension
+    basename = os.path.splitext(basename)[0] + "." + get_timestamp()
+    return basename
+
+def get_optimal_taskNo_cpu_mem(conf):
+    '''
+    Tries to return an optimal resource profile (mainly for t-clean) derived
+    from the image size. At the moment only a naive implementation is done.
+    Scaling linear: 500px to 7500px. Have a look into .default_config.template
+    '''
+    def linear_fit(m, x, b):
+        return m * x + b
+
+    mMemory = (conf.env.tcleanMaxMemory - conf.env.tcleanMinMemory) / (7500 - 500)
+    mCPU = (conf.env.tcleanMaxCpuCores - conf.env.tcleanMinCpuCores) / (7500 - 500)
+
+    bMemory = (mMemory * 7500) / conf.env.tcleanMaxMemory
+    bCPU = (mCPU * 7500) / conf.env.tcleanMaxCpuCores
+
+    yMemory = int(linear_fit(mMemory, conf.input.imsize, bMemory))
+    yCPU = int(linear_fit(mCPU, conf.input.imsize, bCPU))
+
+    # calculate how many slurm tasks can be started to fit on maxSimultaniousNodes
+    numberOfTasks = conf.env.tcleanMaxMemory // yMemory * conf.env.maxSimultaniousNodes
+    optimalDict = {"maxTasks": numberOfTasks, "cpu": yCPU, "mem": yMemory}
+    info(f"Setting tclean sbatch values based on imsize: {optimalDict}")
+    return optimalDict
+
+
+def get_timestamp():
+    return datetime.datetime.now().strftime("%Y%m%d")
+
+
 def update_fits_header_of_cube(filepathCube, headerDict):
     '''
     '''
@@ -216,20 +266,21 @@ def update_fits_header_of_cube(filepathCube, headerDict):
         for key, value in headerDict.items():
             header[key] = value
 
+
 def get_lowest_channelNo_with_data_in_cube(filepathCube):
     '''
     '''
     info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
-    hud =  fits.open(filepathCube, memmap=True, mode="update")
-    dataCube = hud[0].data
-    maxIdx = hud[0].data.shape[1]
-    for ii in range(0, maxIdx + 1):
-        if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
-            continue
-        else:
-            chanNo = ii + 1
-            hud.close()
-            return chanNo
+    with fits.open(filepathCube, memmap=True) as hud:
+        dataCube = hud[0].data
+        maxIdx = hud[0].data.shape[1]
+        for ii in range(0, maxIdx + 1):
+            if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
+                continue
+            else:
+                chanNo = ii + 1
+                return chanNo
+
 
 def update_CRPIX3(filepathCube):
     '''

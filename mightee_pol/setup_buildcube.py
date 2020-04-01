@@ -3,6 +3,7 @@
 import sys
 import logging
 import datetime
+import itertools
 import os
 import time
 import shutil
@@ -11,7 +12,7 @@ import subprocess
 from logging import info, error, warning
 
 # own helpers
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, SEPERATOR
+from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
 import mightee_pol
 
 os.environ['LC_ALL'] = "C.UTF-8"
@@ -41,37 +42,37 @@ FILEPATH_CONFIG_TEMPLATE_ORIGINAL = os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_T
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER
-def get_all_freqsList(conf):
+def get_all_freqsList(conf, msIdx):
     """
     Get all the frequencies of all the channels in each spw.
     """
     from casatools import msmetadata  # work around sice this script get executed in different environments/containers
     allFreqsList = np.array([])
-    info(f"Opening file to read the frequencies of all channels in each spw: {conf.input.inputMS}")
+    info(f"Opening file to read the frequencies of all channels in each spw: {conf.input.inputMS[msIdx]}")
     msmd = msmetadata()
-    msmd.open(msfile=conf.input.inputMS, maxcache=10000)
+    msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
     for spw in range(0, msmd.nspw()):
         allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) + msmd.chanwidths(spw)))
         allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) - msmd.chanwidths(spw)))
     return allFreqsList
 
 
-def get_fieldnames(conf):
+def get_fieldnames(conf, msIdx):
     """
     Get all the frequencies of all the channels in each spw.
     TODO: put all the msmd in one fuction so that the object is created only once.
     """
     from casatools import msmetadata  # work around sice this script get executed in different environments/containers
-    info(f"Opening file to read the fieldnames: {conf.input.inputMS}")
+    info(f"Opening file to read the fieldnames: {conf.input.inputMS[msIdx]}")
     msmd = msmetadata()
-    msmd.open(msfile=conf.input.inputMS, maxcache=10000)
+    msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
     return msmd.fieldnames()
 
-def get_unflagged_channelIndexBoolList(conf):
+def get_unflagged_channelIndexBoolList(conf, msIdx):
     '''
     '''
     def get_subrange_unflagged_channelIndexSet(firstFreq, startFreq, stopFreq):
-        allFreqsList = np.array(get_all_freqsList(conf))
+        allFreqsList = np.array(get_all_freqsList(conf, msIdx))
         rangeFreqsList = allFreqsList[(allFreqsList >= startFreq) & (allFreqsList <= stopFreq)]
         # A list of indexes for all cube channels in range that will hold data.
         # Expl: ( 901e6 [Hz] - 890e6 [Hz] ) // 2.5e6 [Hz] = 4 [listIndex]
@@ -100,29 +101,13 @@ def get_unflagged_channelIndexBoolList(conf):
             channelIndexBoolList.append(False)
     return channelIndexBoolList
 
-def get_unflagged_channelList(conf):
+def get_unflagged_channelList(conf, msIdx):
     channelList = []
-    channelIndexBoolList = get_unflagged_channelIndexBoolList(conf)
+    channelIndexBoolList = get_unflagged_channelIndexBoolList(conf, msIdx)
     for i, channelBool in enumerate(channelIndexBoolList):
         if channelBool:
             channelList.append(i+1)
     return channelList
-
-def get_basename_from_path(filepath, args):
-    # remove "/" from end of path
-    basename = filepath.strip("/")
-    # get basename frompath
-    basename = os.path.basename(basename)
-    # remove file extension
-    basename = os.path.splitext(basename)[0]
-    # remove _spd_f0
-    basename = re.sub(r'_sdp_l[0-9]', "", basename)
-    # get creationTime of filepath
-    creationTime = time.strftime("%Y%m%d", time.gmtime(os.path.getctime(filepath)))
-    basename +=  "." + creationTime
-    if args.get("basenamePrefix"):
-        basename = args['basenamePrefix'] + "." + basename
-    return basename
 
 # HELPER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -144,7 +129,12 @@ def write_user_config_input(args):
             if key in ["createConfig", "createScripts", "start"]:
                 continue
             if key == "inputMS":
-                configInputStringArray.append("basename" + " = " + get_basename_from_path(value, args))
+                try:
+                    isinstance(eval(value), list)
+                except:
+                    # convert string to list, split at, strip whitespace and all back to a string again to write it to config
+                    value = str([x.strip() for x in list(filter(None, value.split(",")))])
+                configInputStringArray.append("basename" + " = " + get_basename_from_path(value))
             configInputStringArray.append(key + " = " + value)
             # don't write these flags to the config file
         configString += "\n".join(configInputStringArray)
@@ -176,32 +166,63 @@ def write_all_sbatch_files(conf):
     '''
     TODO: make this shorter and better
     '''
-    # split and tclean
-    basename = "cube_split_and_tclean"
+    # split
+    slurmArrayLength = str(sum([len(x) for x in conf.data.predictedOutputChannels]))
+    # limit the split jobs to run in parallel, since they seem to cause I/O trouble.
+    if 100 < int(slurmArrayLength):
+        slurmArrayMaxTaks = 100
+    else:
+        slurmArrayMaxTaks = slurmArrayLength
+    basename = "cube_split"
     filename = basename + ".sbatch"
     info(f"Writing sbtach file: {filename}")
     sbatchDict = {
-            'array': "1-" + str(len(conf.data.predictedOutputChannels)) + "%30",
-            'job-name': basename,
-            'output': "logs/" + basename + "-%A-%a.out",
-            'error': "logs/" + basename + "-%A-%a.err",
-            }
+        'array': f"1-{slurmArrayLength}%{slurmArrayMaxTaks}",
+        'job-name': basename,
+        'cpus-per-task': 1,
+        'mem': "10GB",
+        'output': f"logs/{basename}-%A-%a.out",
+        'error': f"logs/{basename}-%A-%a.err",
+        }
+    command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    write_sbtach_file(filename, command, sbatchDict)
+
+    # tclean
+    slurmArrayLength = str(len(set(itertools.chain(*conf.data.predictedOutputChannels))))
+    tcleanSlurm = get_optimal_taskNo_cpu_mem(conf)
+    if int(tcleanSlurm['maxTasks']) > int(slurmArrayLength):
+        tcleanSlurm['maxTasks'] = slurmArrayLength
+    basename = "cube_tclean"
+    filename = basename + ".sbatch"
+    info(f"Writing sbtach file: {filename}")
+    sbatchDict = {
+        'array': f"1-{slurmArrayLength}%{tcleanSlurm['maxTasks']}",
+        'job-name': basename,
+        'cpus-per-task': tcleanSlurm['cpu'],
+        'mem': tcleanSlurm['mem'],
+        'output': f"logs/{basename}-%A-%a.out",
+        'error': f"logs/{basename}-%A-%a.err",
+        }
     command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, sbatchDict)
 
     # buildcube
+    if conf.input.smoothbeam:
+        noOfArrayTasks = 2
+    else:
+        noOfArrayTasks = 1
     basename = "cube_buildcube"
     filename = basename + ".sbatch"
     info(f"Writing sbtach file: {filename}")
     sbatchDict = {
-            'array': "1-1%1",
+            'array': f"1-{noOfArrayTasks}%{noOfArrayTasks}",
             'job-name': basename,
             'output': "logs/" + basename + "-%A-%a.out",
             'error': "logs/" + basename + "-%A-%a.err",
-            'cpus-per-task': 16,
-            'mem': "200GB",
+            'cpus-per-task': 2,
+            'mem': "50GB",
             }
-    command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python3 ' + basename + '.py'
+    command = '/usr/bin/singularity exec /data/exp_soft/containers/casa-6.simg python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, sbatchDict)
 
     # ior flagging
@@ -256,6 +277,22 @@ def copy_runscripts(conf):
     for script in conf.env.runScripts:
         shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
 
+def get_chosenField(fieldListList):
+    '''
+    '''
+    if len(fieldListList) > 1:
+        for fieldList in fieldListList[1:]:
+            fieldIntersection = set(fieldListList[0]).intersection(fieldList)
+            if fieldIntersection:
+                chosenField = fieldIntersection.pop()
+            else:
+                warning(f"Measurement field missmatch please check input data: {fieldListList}")
+                chosenField = "0"
+                break
+    else:
+        chosenField = fieldListList[0][0]
+    info(f"Setting chosenField to: {chosenField}")
+    return chosenField
 
 @click.command(context_settings=dict(
     ignore_unknown_options=True,
@@ -291,8 +328,15 @@ def main(ctx):
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
         print(conf)
 
-        data['predictedOutputChannels'] = get_unflagged_channelList(conf)
-        data['fieldnames'] = get_fieldnames(conf)
+        # iterate ofer multibple ms. This is necessary to feed tclean with multiple ms at once.
+        data['predictedOutputChannels'] = []
+        data['fieldnames'] = []
+        data['chosenField'] = ""
+        for msIdx, inputMS in enumerate(conf.input.inputMS):
+            info(SEPERATOR)
+            data['predictedOutputChannels'].append(get_unflagged_channelList(conf, msIdx))
+            data['fieldnames'].append(get_fieldnames(conf, msIdx))
+        data['chosenField'] = get_chosenField(data['fieldnames'])
         append_user_config_data(data)
         # reload conf after data got appended to user conf
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
@@ -312,8 +356,7 @@ def main(ctx):
         for runScript in conf.env.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
             command += f"echo SLURMID: $SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
-        command += "echo Slurm jobs submitted!"
-        print(command)
+        command += "Slurm jobs submitted!"
         subprocess.run(command, shell=True)
         return None
 
