@@ -1,1 +1,1 @@
-include mightee_pol/default_config.template
+include mightee_pol/.default_config.template
