@@ -37,10 +37,10 @@ The aforementioned is realized through the following scripts:
 
 The input of parameters and setting can be controlled via 3 methods:
 
-1. Command line argument: `meerkat-pol --inputMS "myData.ms"
+1. Command line argument: `meerkat-pol --inputMS "myData.ms"`
 After calling `meerkat-pol` with `--createConfig` all settings are written to
 `dfault_config.txt`. (All valid flags can be found in
-.default_config.template under the `[input]` section).
+`.default_config.template` under the `[input]` section).
 
 2. Standard configuration file: ``default_config.txt`
 After creating `default_config.txt` via `meerkat-pol ... ... --createConfig` it
