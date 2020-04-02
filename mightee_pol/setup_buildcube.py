@@ -350,8 +350,6 @@ def main(ctx):
         command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && echo SLURMID: "
         for runScript in conf.env.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
-       #     command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
-       # command += "echo $SLURMID Slurm jobs submitted!"
             command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo "
         command += "$SLURMID && echo Slurm jobs submitted!"
         info(f"Slurm command: {command}")
