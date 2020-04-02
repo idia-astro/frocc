@@ -9,7 +9,7 @@ import time
 import shutil
 import re
 import subprocess
-from logging import info, error, warning
+from mightee_pol.logger import *
 
 # own helpers
 from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
@@ -29,14 +29,14 @@ import numpy as np
 # SETTINGS
 
 
-logging.basicConfig(
-    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
-)
-
 FILEPATH_CONFIG_USER = "default_config.txt"
 PATH_PACKAGE = os.path.dirname(mightee_pol.__file__)  # helper
 FILEPATH_CONFIG_TEMPLATE = ".default_config.template"
 FILEPATH_CONFIG_TEMPLATE_ORIGINAL = os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE)
+
+# TODO: handle this better. Maybe a config.py? Right now this is a checken-egg-problem, therefore hardcoded
+FILEPATH_LOG_PIPELINE = "pipeline.log"
+FILEPATH_LOG_TIMER = "timer.log"
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -356,9 +356,11 @@ def main(ctx):
         command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && echo SLURMID: "
         for runScript in conf.env.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
-            command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo $SLURMID &&"
-        command += "echo | Slurm jobs submitted! &&"
-        command += ""
+       #     command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && "
+       # command += "echo $SLURMID Slurm jobs submitted!"
+            command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo "
+        command += "$SLURMID && echo Slurm jobs submitted!"
+        info(f"Slurm command: {command}")
         sbatchResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
         info(sbatchResult.stdout.replace("\n", " "))
         if sbatchResult.stderr:

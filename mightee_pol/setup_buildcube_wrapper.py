@@ -15,20 +15,17 @@
 -------------------------------------------------------------------------------
 '''
 import os
+# must come before `import click`
 os.environ['LC_ALL'] = "C-UTF-8"
 os.environ['LANG'] = "C-UTF-8"
 
 import click
 import subprocess
 from os.path import expanduser
-from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation
-from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL
-import logging
-from logging import info
+from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
+from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
+from mightee_pol.logger import *
 
-logging.basicConfig(
-    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
-)
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
@@ -54,7 +51,6 @@ print(PATH_QUICKFIX)
 ))
 #@click.argument('--inputMS', required=False)
 @click.pass_context
-#@main_timer
 def main(ctx):
     '''
     '''
@@ -63,15 +59,17 @@ def main(ctx):
         print("TODO: write help")
         return None
     if "--createConfig" in ctx.args:
+        print_starting_banner("MEERKAT-POL --createConfig")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
         ctx.args.remove("--createConfig")
     if "--createScripts" in ctx.args:
-        #subprocess.run(conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.split(" ") + ctx.args, env={"SINGULARITYENV_APPEND_PATH": PATH_QUICKFIX, "PATH": PATH_QUICKFIX})
+        print_starting_banner("MEERKAT-POL --createScripts")
         commandList = PREFIX_SRUN.split(" ") + conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args
-        info(f"Command: {" ".join(commandList)}")
+        logger.info(f"Command: {' '.join(commandList)}")
         subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": PATH_QUICKFIX, "PATH": PATH_QUICKFIX, "PYTHONPATH": PYTHONPATH_QUICKFIX})
         ctx.args.remove("--createScripts")
     if "--start" in ctx.args:
+        print_starting_banner("MEERKAT-POL --start")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
 
 if __name__=="__main__":

@@ -7,17 +7,21 @@ import configparser
 import datetime
 import os
 import ast
-import logging
 import functools
 import numpy as np
 import inspect
 from astropy.io import fits
-from logging import info, error
 from astropy.io import fits
+#from mightee_pol.logger import info, debug, error, warning
 
-logging.basicConfig(
-    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
-)
+#import logging
+#from logging import info, debug, error, warning
+from mightee_pol.logger import *
+
+#logging.basicConfig(
+#    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
+#)
+
 SEPERATOR = "-------------------------------------------------------------------------------"
 SEPERATOR_HEAVY = "==============================================================================="
 
@@ -290,3 +294,22 @@ def update_CRPIX3(filepathCube):
     headerDict = {"CRPIX3": chanNo}
     info(f"Updating CRPIX3 value in fits header: {filepathCube}, {headerDict}")
     update_fits_header_of_cube(filepathCube, headerDict)
+
+def print_starting_banner(headline):
+    maxLength = len(SEPERATOR_HEAVY)
+    spaceHelper = "                                                                                       "
+    empty = spaceHelper[:maxLength+1]
+    blank = "||" + spaceHelper
+    blank = blank[:maxLength-2] + "||"
+    main = blank[:int((maxLength/2.) - (len(headline)/2.))] + headline
+    main = main[:maxLength-1] + blank[2:int((maxLength/2.) - (len(headline)/2.))] + " "
+    main = main[:maxLength-2] + "||"
+    info(empty)
+    info(SEPERATOR_HEAVY)
+    info(blank)
+    info(main)
+    info(blank)
+    info(SEPERATOR_HEAVY)
+    info(empty)
+
+

@@ -30,12 +30,10 @@ Lennart Heino
 
 import numpy as np
 import sys
-import logging
 import datetime
 import argparse
 from glob import glob
 import os
-from logging import info, error
 
 import click
 
@@ -44,13 +42,11 @@ import casatasks
 
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, get_firstFreq, SEPERATOR
+from mightee_pol.logger import *
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
 
-logging.basicConfig(
-    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
-)
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

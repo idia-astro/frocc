@@ -1,5 +1,4 @@
 #!python3
-# -*- coding: utf-8 -*-
 
 import logging
 import csv

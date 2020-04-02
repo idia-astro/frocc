@@ -25,7 +25,7 @@ import click
 import casatasks 
 
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, get_firstFreq, get_basename_from_path
+from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, get_firstFreq, get_basename_from_path, SEPERATOR, SEPERATOR_HEAVY
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -33,12 +33,38 @@ from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in
 logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
-SEPERATOR = "-----------------------------------------------------------------"
 
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# QUICKFIX
+
+#Otherwise casa log files get confused
+import functools
+import inspect
+def main_timer(func):
+    '''
+    '''
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        TIMESTAMP_START = datetime.datetime.now()
+        info(SEPERATOR_HEAVY)
+        info(f"STARTING script: {inspect.stack()[-1].filename}")
+        info(SEPERATOR)
+
+        func(*args, **kwargs)
+
+        TIMESTAMP_END = datetime.datetime.now()
+        TIMESTAMP_DELTA = TIMESTAMP_END - TIMESTAMP_START
+        info(SEPERATOR)
+        info(f"END script in {TIMESTAMP_DELTA}: {inspect.stack()[-1].filename}")
+        info(SEPERATOR_HEAVY)
+    return wrapper
+
+# QUICKFIX
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
