@@ -154,6 +154,7 @@ def write_sbtach_file(filename, command, conf, sbatchDict={}):
         # update default with provided dict if not empty
         if sbatchDict:
             defaultDict.update(sbatchDict)
+        info(f"Writing sbtach file: {filename}")
         with open(filename, 'w') as f:
             sbatchScript = "#!/bin/bash"
             for key, value in defaultDict.items():

@@ -176,7 +176,6 @@ def write_all_sbatch_files(conf):
         slurmArrayMaxTaks = slurmArrayLength
     basename = "cube_split"
     filename = basename + ".sbatch"
-    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
         'array': f"1-{slurmArrayLength}%{slurmArrayMaxTaks}",
         'job-name': basename,
@@ -195,7 +194,6 @@ def write_all_sbatch_files(conf):
         tcleanSlurm['maxTasks'] = slurmArrayLength
     basename = "cube_tclean"
     filename = basename + ".sbatch"
-    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
         'array': f"1-{slurmArrayLength}%{tcleanSlurm['maxTasks']}",
         'job-name': basename,
@@ -214,7 +212,6 @@ def write_all_sbatch_files(conf):
         noOfArrayTasks = 1
     basename = "cube_buildcube"
     filename = basename + ".sbatch"
-    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
             'array': f"1-{noOfArrayTasks}%{noOfArrayTasks}",
             'job-name': basename,
@@ -229,7 +226,6 @@ def write_all_sbatch_files(conf):
     # ior flagging
     basename = "cube_ior_flagging"
     filename = basename + ".sbatch"
-    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
             'array': "1-1%1",
             'job-name': basename,
@@ -244,7 +240,6 @@ def write_all_sbatch_files(conf):
     # generate rmsy input data
     basename = "cube_generate_rmsy_input_data"
     filename = basename + ".sbatch"
-    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
             'array': "1-1%1",
             'job-name': basename,
@@ -259,7 +254,6 @@ def write_all_sbatch_files(conf):
     # do_rmsy
     basename = "cube_do_rmsy"
     filename = basename + ".sbatch"
-    info(f"Writing sbtach file: {filename}")
     sbatchDict = {
             'array': "1-1%1",
             'job-name': basename,

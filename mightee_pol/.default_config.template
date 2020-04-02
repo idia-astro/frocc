@@ -77,6 +77,8 @@ markerChannel = ".chan"
 
 # path to hdf5Converter
 hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
+# directory to output the hdf5 file to.
+dirHdf5Output = ""
 
 # Also used for sbatch dependency, therfore list order matters!
 runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py"]

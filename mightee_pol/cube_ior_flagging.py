@@ -12,6 +12,7 @@ from scipy.stats import linregress
 from scipy import optimize
 from astropy.io import fits
 from glob import glob
+import os
 
 from scipy import *
 from mightee_pol.lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer, update_CRPIX3, SEPERATOR
@@ -254,13 +255,16 @@ def get_outlierChanNoList_from_outlierIndexSet(statsDict, outlierIndexSet):
         outlierChanNoList.append(statsDict['chanNo'][idx])
     return outlierChanNoList
 
-def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
+def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     """
     Flag channels in data cube.
 
 
     """
-    cubeName = conf.input.basename + ".cube.fits"
+    if mode == "smoothed":
+        cubeName = conf.input.basename + ".cube.smoothed.fits"
+    else:
+        cubeName = conf.input.basename + ".cube.fits"
     info("Flagging channel Number: {0} in {1}".format(chanNoList, cubeName))
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
@@ -278,14 +282,19 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf):
     update_CRPIX3(cubeName)
 
     info(SEPERATOR)
-    info("Generating HDF5 file from: {0}".format(cubeName))
-    command = [conf.env.hdf5Converter, cubeName]
-    subprocess.run(command)
+    info(f"Generating HDF5 file from: {cubeName}")
+    hdf5Outputfile = os.path.join(conf.env.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
+    command = [" ".join([conf.env.hdf5Converter, "-o", hdf5Outputfile, cubeName])]
+    info(f"HDF5 command: {command[0]}")
+    commandResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    info(commandResult.stdout.replace("\n", ", "))
+    if commandResult.stderr:
+        error(commandResult.stderr)
     info(SEPERATOR)
 
 def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
     '''
-    TODO: not optimzed yet. This goes through the whole cube even flagged
+    TODO: not optimzed yet. This goes through the whole cube even if flagged
     channels are known from the previous statistics
     '''
     chanNoList = []
@@ -306,11 +315,15 @@ def main():
     outlierIndexSet = resultsDict['outlierIndexSet']
     statsDictUpdated = update_flagged_data_in_statsDict(statsDict, outlierIndexSet)
     write_statistics_file(statsDictUpdated, conf)
-    outlierChanNoList = get_outlierChanNoList_from_outlierIndexSet(statsDict, outlierIndexSet)
+    outlierChanNoList = get_outlierChanNoList_from_outlierIndexSet(statsDictUpdated, outlierIndexSet)
 
     # optimize: remove channels from list that are already np.nan from cube creation
     outlierChanNoList = get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList)
-    flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf)
+    # TODO: flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf)
+    # TODO: make this nicer
+    flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf, mode="normal")
+    if glob("*.cube.smoothed.fits"):
+        flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf, mode="smoothed")
 
 if __name__ == "__main__":
     CREATE_ITERATION_PLOTS = True
