@@ -3,9 +3,9 @@ mightee-pol
 Repo to hold all the analysis and cube generation script for MIGHTEE-pol.
 
 ## Installation
-1. `git clone git@github.com:idia-astro/mightee-pol.git
-2. `cd mightee-pol
-3. `pip install --user .
+1. `git clone git@github.com:idia-astro/mightee-pol.git`
+2. `cd mightee-pol`
+3. `pip install --user .`
 
 
 ## Usage
