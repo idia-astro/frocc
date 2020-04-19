@@ -1,4 +1,4 @@
-#!python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''
 -------------------------------------------------------------------------------
@@ -36,12 +36,12 @@ COMMAND = "setup_buildcube"
 
 PATH_HOME = expanduser("~") + "/"
 
-PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/opt/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/opt/slurm/bin:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/bin:/idia/software/pipelines/jordan-dev/processMeerKAT/:{PATH_HOME}.fzf/bin"
+PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/opt/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/opt/slurm/bin:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/bin:/idia/software/pipelines/jordan-dev/processMeerKAT/:{PATH_HOME}.fzf/bin:/users/lennart/software/stable"
 
-PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/"
+PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/:/idia/users/lennart/from-data-scratchtmp/lennart/devel/mightee_pol/"
 
-os.environ['PATH'] = PATH_QUICKFIX
-os.environ['PYTHONPATH'] = PYTHONPATH_QUICKFIX
+os.environ['PATH'] = os.environ['PATH'] + ":" + PATH_QUICKFIX
+os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + PYTHONPATH_QUICKFIX
 
 print(PATH_QUICKFIX)
 

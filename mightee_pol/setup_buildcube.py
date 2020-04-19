@@ -1,4 +1,4 @@
-#!python3
+#/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys
 import logging
@@ -9,6 +9,7 @@ import time
 import shutil
 import re
 import subprocess
+import configparser
 from mightee_pol.logger import *
 
 # own helpers
@@ -116,6 +117,7 @@ def get_unflagged_channelList(conf, msIdx):
 def write_user_config_input(args):
     '''
     '''
+
     info(f"Writing user input to config file: {FILEPATH_CONFIG_USER}")
     configString = "# This is the configuration file to initialise the mightee_pol cube generation.\n"
     configString += "# Please change the parameters accordingly.\n\n"
@@ -127,6 +129,7 @@ def write_user_config_input(args):
     configInputStringArray = []
     with open(FILEPATH_CONFIG_USER, 'w') as f:
         for key, value in args.items():
+            # don't write these flags to the config file
             if key in ["createConfig", "createScripts", "start"]:
                 continue
             if key == "inputMS":
@@ -135,9 +138,20 @@ def write_user_config_input(args):
                 except:
                     # convert string to list, split at, strip whitespace and all back to a string again to write it to config
                     value = str([x.strip() for x in list(filter(None, value.split(",")))])
-                configInputStringArray.append("basename" + " = " + get_basename_from_path(value))
+                if "basename" not in args.keys():
+                    configInputStringArray.append("basename" + " = " + get_basename_from_path(value))
             configInputStringArray.append(key + " = " + value)
-            # don't write these flags to the config file
+
+        # Read the config template file first to populate them into the Default
+        # config file.
+        config = configparser.ConfigParser(allow_no_value=True, strict=False, interpolation=configparser.ExtendedInterpolation())
+        # In order to prevent key to get converted to lower case
+        config.optionxform = lambda option: option
+        config.read([FILEPATH_CONFIG_TEMPLATE_ORIGINAL])
+        for key, value in config['input'].items():
+            if key not in args.keys():
+                configInputStringArray.append(key + " = " + value)
+
         configString += "\n".join(configInputStringArray)
         f.write(configString)
 
@@ -170,8 +184,8 @@ def write_all_sbatch_files(conf):
     # split
     slurmArrayLength = str(sum([len(x) for x in conf.data.predictedOutputChannels]))
     # limit the split jobs to run in parallel, since they seem to cause I/O trouble.
-    if 100 < int(slurmArrayLength):
-        slurmArrayMaxTaks = 100
+    if 99 < int(slurmArrayLength):
+        slurmArrayMaxTaks = 99
     else:
         slurmArrayMaxTaks = slurmArrayLength
     basename = "cube_split"
@@ -269,7 +283,7 @@ def copy_runscripts(conf):
     '''
     Copies the runScripts to the local directory
     '''
-    for script in conf.env.runScripts:
+    for script in conf.input.runScripts:
         shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
 
 def get_chosenField(fieldListList):
@@ -305,7 +319,6 @@ def main(ctx):
     if "--createConfig" in ctx.args:
         # If not deleted this key would appear in the config file.
         # get the click args in dot dotation
-        print(ctx.args)
         conf = DotMap(get_dict_from_click_args(ctx.args))
         info(f"Scripts arguments: {conf}")
         write_user_config_input(conf)
@@ -336,19 +349,19 @@ def main(ctx):
         # reload conf after data got appended to user conf
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
-        create_directories(conf)
-
         write_all_sbatch_files(conf)
 
+        #if conf.input.copyRunscripts:
         copy_runscripts(conf)
         return None  # ugly but maybe best solution, because of wrapper
 
     if "--start" in ctx.args:
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+        create_directories(conf)
         args = DotMap(get_dict_from_click_args(ctx.args))
-        firstRunScript = conf.env.runScripts[0].replace('.py', '.sbatch')
+        firstRunScript = conf.input.runScripts[0].replace('.py', '.sbatch')
         command = f"SLURMID=$(sbatch {firstRunScript} | cut -d ' ' -f4) && echo SLURMID: "
-        for runScript in conf.env.runScripts[1:]:
+        for runScript in conf.input.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
             command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo "
         command += "$SLURMID && echo Slurm jobs submitted!"

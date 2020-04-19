@@ -85,7 +85,7 @@ def get_dict_from_click_args(argsList):
 def get_config_in_dot_notation(templateFilename=".default_config.template", configFilename="default_config.txt"):
     '''
     '''
-    config = configparser.ConfigParser(allow_no_value=True, strict=False)
+    config = configparser.ConfigParser(allow_no_value=True, strict=False, interpolation=configparser.ExtendedInterpolation())
     # In order to prevent key to get converted to lower case
     config.optionxform = lambda option: option
     config.read([templateFilename, configFilename])
@@ -139,18 +139,8 @@ def main_timer(func):
 
 def write_sbtach_file(filename, command, conf, sbatchDict={}):
     # TODO: better put this "if" to check which scripts should be created somewhere else
-    if filename.replace(".sbatch", ".py") in conf.env.runScripts:
-        defaultDict = {
-                'array': "1-30%30",
-                'nodes': 1,
-                'ntasks-per-node': 1,
-                'cpus-per-task': 4,
-                'mem': "29GB",
-                'job-name': "NoName",
-                'output': "/logs/NoName-%A-%a.out",
-                'error': "/logs/NoName-%A-%a.err",
-                'partition': "Main",
-                }
+    if filename.replace(".sbatch", ".py") in conf.input.runScripts:
+        defaultDict = dict(conf.input.slurmDefaultHeader)
         # update default with provided dict if not empty
         if sbatchDict:
             defaultDict.update(sbatchDict)
@@ -251,6 +241,12 @@ def get_optimal_taskNo_cpu_mem(conf):
     yMemory = int(linear_fit(mMemory, conf.input.imsize, bMemory))
     yCPU = int(linear_fit(mCPU, conf.input.imsize, bCPU))
 
+    if yMemory > int(conf.env.tcleanMaxMemory):
+        yMemory = int(conf.env.tcleanMaxMemory)
+
+    if yCPU > int(conf.env.tcleanMaxCpuCores):
+        yCPU = int(conf.env.tcleanMaxCpuCores)
+
     # calculate how many slurm tasks can be started to fit on maxSimultaniousNodes
     numberOfTasks = conf.env.tcleanMaxMemory // yMemory * conf.env.maxSimultaniousNodes
     optimalDict = {"maxTasks": numberOfTasks, "cpu": yCPU, "mem": yMemory}
@@ -276,7 +272,7 @@ def get_lowest_channelNo_with_data_in_cube(filepathCube):
     '''
     '''
     info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
-    with fits.open(filepathCube, memmap=True) as hud:
+    with fits.open(filepathCube, memmap=True, mode="update") as hud:
         dataCube = hud[0].data
         maxIdx = hud[0].data.shape[1]
         for ii in range(0, maxIdx + 1):

@@ -283,8 +283,8 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
 
     info(SEPERATOR)
     info(f"Generating HDF5 file from: {cubeName}")
-    hdf5Outputfile = os.path.join(conf.env.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
-    command = [" ".join([conf.env.hdf5Converter, "-o", hdf5Outputfile, cubeName])]
+    hdf5Outputfile = os.path.join(conf.input.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
+    command = [" ".join([conf.input.hdf5Converter, "-o", hdf5Outputfile, cubeName])]
     info(f"HDF5 command: {command[0]}")
     commandResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
     info(commandResult.stdout.replace("\n", ", "))
@@ -294,14 +294,16 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
 
 def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
     '''
+    TODO: implement when time!
     TODO: not optimzed yet. This goes through the whole cube even if flagged
     channels are known from the previous statistics
     '''
-    chanNoList = []
-    for chanNo, flagged in zip(initialStatsDict['chanNo'], initialStatsDict['flagged']):
-        if not flagged and (chanNo in outlierChanNoList):
-            chanNoList.append(chanNo)
-    return chanNoList
+    #chanNoList = []
+    #for chanNo, flagged in zip(initialStatsDict['chanNo'], initialStatsDict['flagged']):
+    #    if not flagged and (chanNo in outlierChanNoList):
+    #        chanNoList.append(chanNo)
+    #return chanNoList
+    return outlierChanNoList
 
 @main_timer
 def main():
