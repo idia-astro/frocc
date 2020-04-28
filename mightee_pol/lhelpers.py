@@ -241,9 +241,19 @@ def get_optimal_taskNo_cpu_mem(conf):
     yMemory = int(linear_fit(mMemory, conf.input.imsize, bMemory))
     yCPU = int(linear_fit(mCPU, conf.input.imsize, bCPU))
 
+    # Set minimum memory depending on number of input data sets
+    # minimum 20GB per dataset
+    numberInputMS = len(conf.input.inputMS)
+
+    memoryPerInputMS = int(conf.env.tcleanMinMemory)
+    if yMemory < memoryPerInputMS * numberInputMS:
+        yMemory = memoryPerInputMS * numberInputMS
+
+    # Set maximum memory
     if yMemory > int(conf.env.tcleanMaxMemory):
         yMemory = int(conf.env.tcleanMaxMemory)
 
+    # Set maximum CPU
     if yCPU > int(conf.env.tcleanMaxCpuCores):
         yCPU = int(conf.env.tcleanMaxCpuCores)
 

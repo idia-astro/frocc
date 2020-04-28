@@ -55,8 +55,23 @@ def main(ctx):
     '''
     '''
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE_ORIGINAL, configFilename="")
-    if "--help" in ctx.args or len(ctx.args) == 0:
-        print("TODO: write help")
+    if "--help" in ctx.args or len(ctx.args) == 0 or len(set(["--createConfig", "--createScripts", "--start"]).intersection(set(ctx.args))) == 0:
+        helpString='''
+        Usage
+        -----
+        1. `meerkat-pol --createConfig --inputMS <path to input.ms>`
+        2. `meerkat-pol --createScripts`
+        3. `meerkat-pol --start`
+
+        Or in one command:
+        ------------------
+        `meerkat-pol --createConfig --inputMS <path to input.ms> --createScripts --start`
+
+        More advanced
+        -------------
+        `meerkat-pol --inputMS "/my/data/input1.ms, /my/data/input2.mms" --freqRanges '["900-1000", "1300-1500", "1600-1650"]' --imsize 1024 --niter 500 --threshold 0.0001 --smoothbeam 15arcsec --createConfig --createScripts --start`
+        '''
+        print(helpString)
         return None
     if "--createConfig" in ctx.args:
         print_starting_banner("MEERKAT-POL --createConfig")

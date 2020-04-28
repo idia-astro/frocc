@@ -188,13 +188,17 @@ def write_all_sbatch_files(conf):
         slurmArrayMaxTaks = 99
     else:
         slurmArrayMaxTaks = slurmArrayLength
+    numberInputMS = len(conf.input.inputMS)
+    slurmMemory = numberInputMS * 20
+    if slurmMemory > int(conf.env.tcleanMaxMemory):
+        slurmMemory = int(conf.env.tcleanMaxMemory)
     basename = "cube_split"
     filename = basename + ".sbatch"
     sbatchDict = {
         'array': f"1-{slurmArrayLength}%{slurmArrayMaxTaks}",
         'job-name': basename,
         'cpus-per-task': 1,
-        'mem': "10GB",
+        'mem': str(slurmMemory) + "GB",
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
         }
@@ -212,7 +216,7 @@ def write_all_sbatch_files(conf):
         'array': f"1-{slurmArrayLength}%{tcleanSlurm['maxTasks']}",
         'job-name': basename,
         'cpus-per-task': tcleanSlurm['cpu'],
-        'mem': tcleanSlurm['mem'],
+        'mem': str(tcleanSlurm['mem']) + "GB",
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
         }

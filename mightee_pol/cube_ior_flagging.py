@@ -89,14 +89,15 @@ def get_dict_from_tabFile(tabFile):
 
 
 # polyom to fit
-def h(x, a, b, c):
+def h(x, a, b, c, d):
     x = np.array(x)
-    polynom = a*x**2 + b * x + c
+    polynom = a*x**3 + b*x**2 + c + d
+    #polynom = a*x**2 + b * x + c
     return polynom
 
 
-def get_yDataFit(xData, a, b, c):
-    return h(xData, a, b, c)
+def get_yDataFit(xData, a, b, c, d):
+    return h(xData, a, b, c, d)
 
 
 def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
@@ -170,12 +171,12 @@ def get_flaggedIndexList_by_strong_outliers(xData, yData):
 
 def get_flaggedIndexList_by_ior_with_fit(xData, yData, outlierIndexSet, xDataInitial, yDataInitial):
     flaggedIndexList = []
-    initial_guess_abc = [1, 1, 1]
+    initial_guess_abc = [1, 1, 1, 1]
     xDataCleaned, yDataCleaned = remove_nan_and_zero_from_xyData(xData, yData)
     variables, variables_covariance = optimize.curve_fit(h, xDataCleaned, yDataCleaned, initial_guess_abc)
-    a, b, c = variables
-    yDataFit = h(xData, a, b, c)
-    yDataFitAllData = h(xDataInitial, a, b, c)
+    a, b, c, d = variables
+    yDataFit = h(xData, a, b, c, d)
+    yDataFitAllData = h(xDataInitial, a, b, c, d)
     std = get_std_via_mad(np.array(yDataFit) - np.array(yData))
     for i, asd in enumerate(xDataInitial):
         # above x times sigma
@@ -184,7 +185,7 @@ def get_flaggedIndexList_by_ior_with_fit(xData, yData, outlierIndexSet, xDataIni
         # below x times sigma
         elif yDataInitial[i] < yDataFitAllData[i] - IOR_LIMIT_SIGMA * std:
             flaggedIndexList.append(i)
-    return [flaggedIndexList, std, [a, b, c]]
+    return [flaggedIndexList, std, [a, b, c, d]]
 
 def remove_nan_and_zero_from_xyData(xData, yData):
     xDataCleaned = []
@@ -230,13 +231,13 @@ def get_outlierIndex_and_fitStats_dict(statsDict, conf):
         outlierIndexSet = outlierIndexSet.union(set(tmpOutlierIndexList))
         outlierIndexLengthAfter = len(outlierIndexSet)
 
-        a, b, c = fitCoefficients
+        a, b, c, d = fitCoefficients
         if CREATE_ITERATION_PLOTS:
-            plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c), std, outlierIndexSet, iteration, conf)
+            plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c, d), std, outlierIndexSet, iteration, conf)
             iteration += 1
         if outlierIndexLengthBefore == outlierIndexLengthAfter:
             outlierIndexSet = set(tmpOutlierIndexList)
-            plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c), std, outlierIndexSet, iteration, conf)
+            plot_all(statsDict, get_yDataFit(resultsDict['xData'], a, b, c, d), std, outlierIndexSet, iteration, conf)
             outlierSwitch = False
     resultsDict['outlierIndexSet'] = outlierIndexSet
     resultsDict['sigmaRMS'] = std
@@ -312,7 +313,7 @@ def main():
     statsDict = get_dict_from_tabFile(filepathStatistics)
     initialStatsDict = dict(statsDict)  # make a deep copy
     resultsDict = get_outlierIndex_and_fitStats_dict(statsDict, conf)
-    a, b, c = resultsDict['fitCoefficients']
+    a, b, c, d = resultsDict['fitCoefficients']
     std = resultsDict['sigmaRMS']
     outlierIndexSet = resultsDict['outlierIndexSet']
     statsDictUpdated = update_flagged_data_in_statsDict(statsDict, outlierIndexSet)
