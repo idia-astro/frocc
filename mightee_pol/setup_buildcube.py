@@ -149,7 +149,7 @@ def write_user_config_input(args):
         config.optionxform = lambda option: option
         config.read([FILEPATH_CONFIG_TEMPLATE_ORIGINAL])
         for key, value in config['input'].items():
-            if key not in args.keys():
+            if key not in args.keys() and key != "basename":
                 configInputStringArray.append(key + " = " + value)
 
         configString += "\n".join(configInputStringArray)

@@ -7,7 +7,7 @@ import sys
 -------------------------------------------------------------------------------
 '''
 USAGE='''
- meerkat-pol Useage
+ meerkat-pol Usage
  ==================
  
  1. Usage
@@ -148,24 +148,31 @@ SPECIAL_FLAGS = [
         "--help",
         "-h",
         "--start",
+        "--usage",
         "--createConfig",
         "--createScripts",
         "--readme",
         ]
 
 def check_if_flag_exists(flagList):
+    '''
+    TODO: filter -- and - prefix handling better
+    '''
     configDictList = get_config_dictList()
     validFlags = []
     for entry in configDictList:
         validFlags.append(entry["FLAG"])
     validFlags += SPECIAL_FLAGS
-    flagList = [ flag for flag in flagList if flag.startswith("--") ]
-    wrongFlags = ", ".join(list(set(flagList).difference(set(validFlags))))
+    ddFlagList = [ flag for flag in flagList if flag.startswith("--") ]
+    wrongFlags = [ flag for flag in flagList if ( not flag.startswith("--") and flag.startswith("-"))]
+    wrongFlags += list(set(ddFlagList).difference(set(validFlags)))
+    wrongFlags = ", ".join(wrongFlags)
     if wrongFlags:
         print(f' ERROR: Flag not recognised: {wrongFlags}')
         print()
         print(f' `meerkat-pol --help` to list all valid flags')
         sys.exit()
+
 
 def check_flag_type(flagList, conf):
     configDictList = get_config_dictList()
