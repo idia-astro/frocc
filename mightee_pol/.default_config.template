@@ -13,20 +13,51 @@
 # =============================================================================
 
 [input]
-# List of frequency ranges in MHz to include (opportunistic) in the data cube
+# DISCRIPTION: The path to the input MS. Multiple paths can be specified to
+# combine two observations of the same object during the `tclean` task.
+# TYPE: str or list(str)
+# TYPE-COMMENT: For multipe: Can be list of strings or comma seperated string.
+# EXAMPLE: "/path/data.ms" or ["input1.ms", input2.ms"] or "input1.ms,input2.ms"
+inputMS = ""
+
+# DISCRIPTION: The basename of all output files. If left empty this will be
+# derived from the input filename and the a timestamp of today.
+# TYPE: str
+# EXAMPLE: COSMOS.field3.20200505
+basename = ""
+
+# DISCRIPTION: List of frequency ranges in [MHz] to include (opportunistic) in
+# the data cube. Non valid ranges are ignored.
+# TYPE: list(str)
+# TYPE-COMMENT: The String must be two numerics connected by a dash.
+# EXAMPLE: ["890-1000", "1200-1700"]
 freqRanges = ["890-1700"]
 
-# Channel width in [Hz] of the final data cube. 
+# DISCRIPTION: Specify field name of MS. Leave empty "" for automatically
+# choose the first field in the MS's field list.
+# TYPE: str
+# EXAMPLE: "COSMOS"
+chosenField = ""
+
+# DISCRIPTION: Channel width in [Hz] of the final data cube. CAUTION: CASA
+# deviates from this value slightly in order to match the data within a spw.
+# TYPE: float or str
+# EXAMPLE: 2.5e6
 outputChanBandwidth = 2.5e6
 
-# The observation ID
+# DISCRIPTION: The observation ID of the MS.
+# TYPE: int or str
+# EXAMPLE: 0
 observation = 0
 
 
 # =============================================================================
 # split
 # https://casa.nrao.edu/docs/TaskRef/split-task.html
-#
+
+# DISCRIPTION: The CASA `split` datacolumn.
+# https://casa.nrao.edu/docs/TaskRef/split-task.html
+# TYPE: str
 datacolumn = 'data'
 
 
@@ -34,30 +65,123 @@ datacolumn = 'data'
 # tclean
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 mask = ""
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int or str
 niter = 500
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int or str
 gain = 0.1
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 deconvolver = "clark"
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: float
 threshold = 0.00001
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int
 imsize = 512
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: float
 cell = 1.5
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 gridder = "wproject"
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int
 wprojplanes = -1
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 specmode = "mfs"
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 spw = ""
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 stokes = "IQUV"
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 weighting = "briggs"
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str or float
 robust = 0.0
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int
 pblimit = -1
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: bool
 restoration = True
+
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+# EXAMPLE: "15arcsec"
 restoringbeam = ""
 
 # =============================================================================
 # imsmooth
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
 
-# smoothbeam = "15arcsec"
-smoothbeam = "" # leave empty for no smoothed image cube
+# DISCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
+# TYPE: bool
+# EXAMPLE: "15arcsec", empty string "" for no smoothing
+smoothbeam = ""
+
+
+# =============================================================================
+# Environment related config where the user should have more control over
+#
+# DISCRIPTION: Path to hdf5Converter
+# TYPE: str
+hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
+
+# DISCRIPTION: Directory to output the hdf5 file to.
+# TYPE: str
+dirHdf5Output = ""
+
+# DISCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
+# order matters!
+# TYPE: list(str)
+runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py"]
+
+# DISCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
+# job-name, cpus-per-task may be overwirtten by the pipline
+# TYPE: dict
+slurmDefaultHeader = {'array': '1-30%30', 'nodes': 1, 'ntasks-per-node': 1,'cpus-per-task': 4, 'mem': "29GB", 'job-name': "NoName", 'output': '/logs/NoName-%A-%a.out', 'error': '/logs/NoName-%A-%a.err', 'partition': "Main", 'time': "24:00:00", 'account': "b03-idia-ag"}
 
 
 # =============================================================================
@@ -75,23 +199,14 @@ dirList = ["logs/", "images/", "vis/", "plots/"]
 # string marker for channel files
 markerChannel = ".chan"
 
-# path to hdf5Converter
-hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
-# directory to output the hdf5 file to.
-dirHdf5Output = ""
 
-# Also used for sbatch dependency, therfore list order matters!
-runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py"]
-
-#prefixSingularity = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 1 --time 1:00:00 --pty singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
 prefixSingularity = "singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
-#prefixSingularity = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 1 --time 1:00:00 --pty singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 #prefixSingularity = "singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
-#prefixSingularity = "singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
 
 # The container and headnode have different python3 paths, hence the python3 $HOME...
 # CAUTION ${HOME} does not get resolved by singularity. A string.replace() in setup_buildcube_wrapper.py is done to fix that.
-commandSingularity = "python ${HOME}/.local/bin/setup_buildcube"
+#commandSingularity = "python ${HOME}/.local/bin/setup_buildcube"
+commandSingularity = "setup_buildcube"
 #env = {"PATH": "${PATH}:${HOME}/.local/bin/"}
 
 
@@ -101,7 +216,7 @@ commandSingularity = "python ${HOME}/.local/bin/setup_buildcube"
 tcleanMaxCpuCores = 30
 tcleanMinCpuCores = 2
 tcleanMaxMemory = 236  # in GB
-tcleanMinMemory = 20
+tcleanMinMemory = 40   # in GB
 # maximum number of the cluster nodes to use
 maxSimultaniousNodes = 40
 
