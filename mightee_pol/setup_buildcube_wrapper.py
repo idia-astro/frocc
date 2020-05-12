@@ -24,12 +24,13 @@ import subprocess
 from os.path import expanduser
 from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
+from mightee_pol.check_input import check_all, print_usage, print_help, print_readme, SPECIAL_FLAGS
 from mightee_pol.logger import *
 
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun --qos qos-interactive -N 1 --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty"
+PREFIX_SRUN = "srun --qos qos-interactive -N 1 --preserve-env --mem 40G --ntasks-per-node 8 --cpus-per-task 1 --time 10:00:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 COMMAND = "setup_buildcube"
@@ -43,35 +44,28 @@ PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/sof
 os.environ['PATH'] = os.environ['PATH'] + ":" + PATH_QUICKFIX
 os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + PYTHONPATH_QUICKFIX
 
-print(PATH_QUICKFIX)
 
 @click.command(context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True,
-))
+),
+    add_help_option=False,
+)
 #@click.argument('--inputMS', required=False)
 @click.pass_context
 def main(ctx):
     '''
     '''
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE_ORIGINAL, configFilename="")
-    if "--help" in ctx.args or len(ctx.args) == 0 or len(set(["--createConfig", "--createScripts", "--start"]).intersection(set(ctx.args))) == 0:
-        helpString='''
-        Usage
-        -----
-        1. `meerkat-pol --createConfig --inputMS <path to input.ms>`
-        2. `meerkat-pol --createScripts`
-        3. `meerkat-pol --start`
-
-        Or in one command:
-        ------------------
-        `meerkat-pol --createConfig --inputMS <path to input.ms> --createScripts --start`
-
-        More advanced
-        -------------
-        `meerkat-pol --inputMS "/my/data/input1.ms, /my/data/input2.mms" --freqRanges '["900-1000", "1300-1500", "1600-1650"]' --imsize 1024 --niter 500 --threshold 0.0001 --smoothbeam 15arcsec --createConfig --createScripts --start`
-        '''
-        print(helpString)
+    check_all(ctx.args, conf)
+    if "--usage" in ctx.args or len(set(SPECIAL_FLAGS).intersection(set(ctx.args))) == 0:
+        print_usage()
+        return None
+    if "--help" in ctx.args or "-h" in ctx.args:
+        print_help()
+        return None
+    if "--readme" in ctx.args:
+        print_readme()
         return None
     if "--createConfig" in ctx.args:
         print_starting_banner("MEERKAT-POL --createConfig")

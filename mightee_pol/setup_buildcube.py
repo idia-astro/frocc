@@ -50,7 +50,7 @@ def get_all_freqsList(conf, msIdx):
     """
     from casatools import msmetadata  # work around sice this script get executed in different environments/containers
     allFreqsList = np.array([])
-    info(f"Opening file to read the frequencies of all channels in each spw: {conf.input.inputMS[msIdx]}")
+    info(f"Opening file to read the frequency coverage of all channels in each spw: {conf.input.inputMS[msIdx]}")
     msmd = msmetadata()
     msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
     for spw in range(0, msmd.nspw()):
@@ -189,7 +189,7 @@ def write_all_sbatch_files(conf):
     else:
         slurmArrayMaxTaks = slurmArrayLength
     numberInputMS = len(conf.input.inputMS)
-    slurmMemory = numberInputMS * 20
+    slurmMemory = 20
     if slurmMemory > int(conf.env.tcleanMaxMemory):
         slurmMemory = int(conf.env.tcleanMaxMemory)
     basename = "cube_split"
@@ -290,10 +290,20 @@ def copy_runscripts(conf):
     for script in conf.input.runScripts:
         shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
 
-def get_chosenField(fieldListList):
+def get_chosenField(fieldListList, conf):
     '''
     '''
-    if len(fieldListList) > 1:
+    if conf.input.chosenField:
+        # check if chosenField is in any fieldList
+        flatList = [item for sublist in fieldListList for item in sublist]
+        if conf.input.chosenField in flatList:
+            chosenField = conf.input.chosenField
+        else:
+            # TODO raise a proper error
+            error(f"chosenField \'{conf.input.chosenField}\' is not in {conf.input.inputMS}.")
+            error(f"The following fields are found: {fieldListList}")
+            sys.exit()
+    elif len(fieldListList) > 1:
         for fieldList in fieldListList[1:]:
             fieldIntersection = set(fieldListList[0]).intersection(fieldList)
             if fieldIntersection:
@@ -311,7 +321,6 @@ def get_chosenField(fieldListList):
     ignore_unknown_options=True,
     allow_extra_args=True,
 ))
-#@click.argument('--inputMS', required=False)
 @click.pass_context
 @main_timer
 def main(ctx):
@@ -348,7 +357,7 @@ def main(ctx):
             info(SEPERATOR)
             data['predictedOutputChannels'].append(get_unflagged_channelList(conf, msIdx))
             data['fieldnames'].append(get_fieldnames(conf, msIdx))
-        data['chosenField'] = get_chosenField(data['fieldnames'])
+        data['chosenField'] = get_chosenField(data['fieldnames'], conf)
         append_user_config_data(data)
         # reload conf after data got appended to user conf
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
