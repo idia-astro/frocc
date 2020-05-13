@@ -13,39 +13,39 @@
 # =============================================================================
 
 [input]
-# DISCRIPTION: The path to the input MS. Multiple paths can be specified to
+# DESCRIPTION: The path to the input MS. Multiple paths can be specified to
 # combine two observations of the same object during the `tclean` task.
 # TYPE: str or list(str)
 # TYPE-COMMENT: For multipe: Can be list of strings or comma seperated string.
 # EXAMPLE: "/path/data.ms" or ["input1.ms", input2.ms"] or "input1.ms,input2.ms"
 inputMS = ""
 
-# DISCRIPTION: The basename of all output files. If left empty this will be
+# DESCRIPTION: The basename of all output files. If left empty this will be
 # derived from the input filename and the a timestamp of today.
 # TYPE: str
 # EXAMPLE: COSMOS.field3.20200505
 basename = ""
 
-# DISCRIPTION: List of frequency ranges in [MHz] to include (opportunistic) in
+# DESCRIPTION: List of frequency ranges in [MHz] to include (opportunistic) in
 # the data cube. Non valid ranges are ignored.
 # TYPE: list(str)
 # TYPE-COMMENT: The String must be two numerics connected by a dash.
 # EXAMPLE: ["890-1000", "1200-1700"]
 freqRanges = ["890-1700"]
 
-# DISCRIPTION: Specify field name of MS. Leave empty "" for automatically
+# DESCRIPTION: Specify field name of MS. Leave empty "" for automatically
 # choose the first field in the MS's field list.
 # TYPE: str
 # EXAMPLE: "COSMOS"
 chosenField = ""
 
-# DISCRIPTION: Channel width in [Hz] of the final data cube. CAUTION: CASA
+# DESCRIPTION: Channel width in [Hz] of the final data cube. CAUTION: CASA
 # deviates from this value slightly in order to match the data within a spw.
 # TYPE: float or str
 # EXAMPLE: 2.5e6
 outputChanBandwidth = 2.5e6
 
-# DISCRIPTION: The observation ID of the MS.
+# DESCRIPTION: The observation ID of the MS.
 # TYPE: int or str
 # EXAMPLE: 0
 observation = 0
@@ -55,7 +55,7 @@ observation = 0
 # split
 # https://casa.nrao.edu/docs/TaskRef/split-task.html
 
-# DISCRIPTION: The CASA `split` datacolumn.
+# DESCRIPTION: The CASA `split` datacolumn.
 # https://casa.nrao.edu/docs/TaskRef/split-task.html
 # TYPE: str
 datacolumn = 'data'
@@ -65,87 +65,87 @@ datacolumn = 'data'
 # tclean
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 mask = ""
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: int or str
 niter = 500
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: int or str
 gain = 0.1
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 deconvolver = "clark"
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: float
 threshold = 0.00001
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: int
 imsize = 512
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: float
 cell = 1.5
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 gridder = "wproject"
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: int
 wprojplanes = -1
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 specmode = "mfs"
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 spw = ""
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 stokes = "IQUV"
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 weighting = "briggs"
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str or float
 robust = 0.0
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: int
 pblimit = -1
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: bool
 restoration = True
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
 # EXAMPLE: "15arcsec"
@@ -155,7 +155,7 @@ restoringbeam = ""
 # imsmooth
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
 
-# DISCRIPTION:
+# DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
 # TYPE: bool
 # EXAMPLE: "15arcsec", empty string "" for no smoothing
@@ -165,20 +165,20 @@ smoothbeam = ""
 # =============================================================================
 # Environment related config where the user should have more control over
 #
-# DISCRIPTION: Path to hdf5Converter
+# DESCRIPTION: Path to hdf5Converter
 # TYPE: str
 hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
 
-# DISCRIPTION: Directory to output the hdf5 file to.
+# DESCRIPTION: Directory to output the hdf5 file to.
 # TYPE: str
 dirHdf5Output = ""
 
-# DISCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
+# DESCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
 # order matters!
 # TYPE: list(str)
 runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py"]
 
-# DISCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
+# DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
 # job-name, cpus-per-task may be overwirtten by the pipline
 # TYPE: dict
 slurmDefaultHeader = {'array': '1-30%30', 'nodes': 1, 'ntasks-per-node': 1,'cpus-per-task': 4, 'mem': "29GB", 'job-name': "NoName", 'output': '/logs/NoName-%A-%a.out', 'error': '/logs/NoName-%A-%a.err', 'partition': "Main", 'time': "24:00:00", 'account': "b03-idia-ag"}

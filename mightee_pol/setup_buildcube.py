@@ -155,12 +155,18 @@ def write_user_config_input(args):
         configString += "\n".join(configInputStringArray)
         f.write(configString)
 
-def append_user_config_data(data):
+def update_user_config_data(data):
     '''
     TODO: this needs to be replaced if existing, not appended
     '''
     info(f"Appending msdata to file: {data}, {FILEPATH_CONFIG_USER}")
-    configString = "\n\n[data]\n"
+    with open(FILEPATH_CONFIG_USER, "r") as f:
+        fullConfigString = f.read()
+    # Check whether [data] exists and either append or update
+    if fullConfigString.find("\n[data]\n") < 0:
+        configString = "\n\n[data]\n"
+    else:
+        configString = "\n"
     configInputStringArray = []
     with open(FILEPATH_CONFIG_USER, 'a') as f:
         for key, value in data.items():
@@ -358,7 +364,7 @@ def main(ctx):
             data['predictedOutputChannels'].append(get_unflagged_channelList(conf, msIdx))
             data['fieldnames'].append(get_fieldnames(conf, msIdx))
         data['chosenField'] = get_chosenField(data['fieldnames'], conf)
-        append_user_config_data(data)
+        update_user_config_data(data)
         # reload conf after data got appended to user conf
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
@@ -380,11 +386,25 @@ def main(ctx):
         command += "$SLURMID && echo Slurm jobs submitted!"
         info(f"Slurm command: {command}")
         sbatchResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-        info(sbatchResult.stdout.replace("\n", " "))
+        sbatchResultStd = sbatchResult.stdout.replace("\n", " ")
+        info(sbatchResultStd)
+        # parse the slurm job ID from sbatchResult
+        slurmIDList = [ int(num) for num in sbatchResultStd.split() if num.isdigit() ]
+        update_user_config_data({'slurmIDList': slurmIDList})
         if sbatchResult.stderr:
             error(sbatchResult.stderr)
         return None
 
+    if "--cancel" in ctx.args or "--kill" in ctx.args:
+        conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+        command = f'scancel {" ".join(map(str,conf.data.slurmIDList))}'
+        info(f"Slurm command: {command}")
+        sbatchResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        sbatchResultStd = sbatchResult.stdout.replace("\n", " ")
+        info(sbatchResultStd)
+        if sbatchResult.stderr:
+            error(sbatchResult.stderr)
+        return None
 
 
 

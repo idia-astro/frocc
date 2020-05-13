@@ -24,7 +24,11 @@ USAGE='''
  ----------------
  `meerkat-pol --inputMS "/my/data/input1.ms, /my/data/input2.mms" --freqRanges '["900-1000", "1300-1500", "1600-1650"]' --imsize 1024 --niter 500 --threshold 0.0001 --smoothbeam 15arcsec --createConfig --createScripts --start`
 
- 4. Further help
+ 5. Canel slurm jobs
+ -------------------
+ merkat-pol --cancel
+
+ 5. Further help
  ---------------
  merkat-pol --readme
  merkat-pol --help
@@ -49,11 +53,11 @@ README='''
  2. Implementation
  -----------------
  
- `mmerkat-pol` takes input mesurement set (ms) data and parameters to create
- channalized data cube in Stokes IQUV.  
+ `merkat-pol` takes input measurement set (ms) data and parameters to create
+ channelized data cube in Stokes IQUV.  
  First CASA `split` is run to split out visibilities from the input ms into
  visibilities of the aimed resolution in frequency. Then `tclean` runs on each
- of these ms seperately and creates `.fits`-files for each channel. Next, the
+ of these ms separately and creates `.fits`-files for each channel. Next, the
  channel files are put into a data cube. The cube is analysed with an iterative
  outlier rejection which detects strongly diverging channels by measuring the
  RMS in Stokes V by fitting a third order polynomial. Bad channels get flagged
@@ -67,7 +71,7 @@ README='''
  
  1. Command line argument: `meerkat-pol --inputMS "myData.ms"`
  After calling `meerkat-pol` with `--createConfig` all settings are written to
- `dfault_config.txt`. (All valid flags can be found in
+ `default_config.txt`. (All valid flags can be found in
  `.default_config.template` under the `[input]` section).
  
  2. Standard configuration file: `default_config.txt`
@@ -78,30 +82,30 @@ README='''
  3. Fallback configuration file: `.default_config.template
  The pipeline falls back to the values in this file if they have not been
  specified via one of the previous way. It is also a place where one can lookup
- explainations for valid flags for `meerkat-pol`. It also includes the section
+ explanations for valid flags for `meerkat-pol`. It also includes the section
  `[env]` which can not be controlled via command line flags.
  
  ------------------------------------------------------------------------------
  
  When calling `meerkat-pol --createScripts` `default_config.txt` and
  `.default_config.template` are read and the python and slurm files are copied
- to the current directory. It also tried to calculate the optimal number of
- slurm taks depending on the input ms spw coverage.
+ to the current directory. The script also tries to calculate the optimal
+ number of slurm taks depending on the input ms spw coverage.
  
  The last step `meerkat-pol --start` submits the slurm files in a dependency
  chain. Caution: CASA does not always seem to report back its failure state in
  a correct way. Therefore, the slurm flag `--dependency=afterany:...` is
- chosen, which starts the next job in the chain even if the previous has
+ chosen, which starts the next job in the chain even if the previous one has
  failed.
- 
  
  ### Logging
  TODO: It's tricky, CASA's logger gets in the way.
+
  
  3. Known issues
  ---------------
  - About 2% of cube channels show a differend frequency width
- def check_flags(conf):
+
  
 -------------------------------------------------------------------------------
  
@@ -122,7 +126,7 @@ def get_config_dictList():
         # only get the [input] section
         inputList = configList[configList.index("[input]")+1:configList.index("[env]")]
         inputList = [ line for line in inputList if line.startswith("#") or ( not line.startswith("#") and line.find("=") > 0) ]
-        keywords = ("# DISCRIPTION:", "# TYPE:", "# TYPE-COMMENT:", "# EXAMPLE:")
+        keywords = ("# DESCRIPTION:", "# TYPE:", "# TYPE-COMMENT:", "# EXAMPLE:")
         configDict = {}
         lastKey = ""
         for line in inputList:
@@ -132,7 +136,7 @@ def get_config_dictList():
                 configDict[key] = value.strip()
                 lastKey = key
             elif line.startswith("#") and lastKey:
-                configDict[lastKey] += line[1:].strip()
+                configDict[lastKey] += line[1:].rstrip()
             elif not line.startswith("#") and line.find("=") > 0:
                 configDict['DEFAULT'] = line
                 configDict['FLAG'] = f'--{line.split("=",1)[0].strip()}'
@@ -152,6 +156,8 @@ SPECIAL_FLAGS = [
         "--createConfig",
         "--createScripts",
         "--readme",
+        "--cancel",
+        "--kill",
         ]
 
 def check_if_flag_exists(flagList):
@@ -164,8 +170,9 @@ def check_if_flag_exists(flagList):
         validFlags.append(entry["FLAG"])
     validFlags += SPECIAL_FLAGS
     ddFlagList = [ flag for flag in flagList if flag.startswith("--") ]
-    wrongFlags = [ flag for flag in flagList if ( not flag.startswith("--") and flag.startswith("-"))]
-    wrongFlags += list(set(ddFlagList).difference(set(validFlags)))
+    # TODO: better flag parsing
+#    wrongFlags = [ flag for flag in flagList if ( not flag.startswith("--") and flag.startswith("-"))]
+    wrongFlags = list(set(ddFlagList).difference(set(validFlags)))
     wrongFlags = ", ".join(wrongFlags)
     if wrongFlags:
         print(f' ERROR: Flag not recognised: {wrongFlags}')
@@ -195,7 +202,8 @@ def print_help():
             # ignore FLAG
             if key != "FLAG":
                 padding = (keyLength - len(key)) * " "
-                print("  "+key+":", padding + value)
+                line = "  "+key+": " + padding + value
+                print(line)
         print()
     print(" For more usage support please read the output of:")
     print("  meerkat-pol --usage")
