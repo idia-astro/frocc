@@ -30,7 +30,7 @@ from mightee_pol.logger import *
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun --qos qos-interactive -N 1 --preserve-env --mem 40G --ntasks-per-node 8 --cpus-per-task 1 --time 10:00:00 --pty"
+PREFIX_SRUN = "srun --qos qos-interactive -N 1 --preserve-env --mem 40G --ntasks-per-node 1 --cpus-per-task 4 --time 10:00:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 COMMAND = "setup_buildcube"
