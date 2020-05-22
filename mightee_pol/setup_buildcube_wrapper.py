@@ -25,12 +25,13 @@ from os.path import expanduser
 from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
 from mightee_pol.check_input import check_all, print_usage, print_help, print_readme, SPECIAL_FLAGS
+from mightee_pol.check_status import print_status
 from mightee_pol.logger import *
 
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun --qos qos-interactive -N 1 --preserve-env --mem 40G --ntasks-per-node 1 --cpus-per-task 4 --time 10:00:00 --pty"
+PREFIX_SRUN = "srun -N 1 --preserve-env --mem 30G --ntasks-per-node 1 --cpus-per-task 4 --time 10:00:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 COMMAND = "setup_buildcube"
@@ -41,8 +42,14 @@ PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/op
 
 PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/:/idia/users/lennart/from-data-scratchtmp/lennart/devel/mightee_pol/"
 
-os.environ['PATH'] = os.environ['PATH'] + ":" + PATH_QUICKFIX
-os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + PYTHONPATH_QUICKFIX
+try:
+    os.environ['PATH'] = os.environ['PATH'] + ":" + PATH_QUICKFIX
+except:
+    os.environ['PATH'] = PATH_QUICKFIX
+try:
+    os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + PYTHONPATH_QUICKFIX
+except:
+    os.environ['PYTHONPATH'] = PYTHONPATH_QUICKFIX
 
 
 @click.command(context_settings=dict(
@@ -57,12 +64,15 @@ def main(ctx):
     '''
     '''
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE_ORIGINAL, configFilename="")
-    check_all(ctx.args, conf)
+    check_all(ctx.args)
     if "--usage" in ctx.args or len(set(SPECIAL_FLAGS).intersection(set(ctx.args))) == 0:
         print_usage()
         return None
     if "--help" in ctx.args or "-h" in ctx.args:
         print_help()
+        return None
+    if "--status" in ctx.args or "-s" in ctx.args:
+        print_status()
         return None
     if "--readme" in ctx.args:
         print_readme()

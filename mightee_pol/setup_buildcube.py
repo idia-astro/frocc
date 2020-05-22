@@ -59,13 +59,13 @@ def get_all_freqsList(conf, msIdx):
     return allFreqsList
 
 
-def get_fieldnames(conf, msIdx):
+def get_fields(conf, msIdx):
     """
     Get all the frequencies of all the channels in each spw.
     TODO: put all the msmd in one fuction so that the object is created only once.
     """
     from casatools import msmetadata  # work around sice this script get executed in different environments/containers
-    info(f"Opening file to read the fieldnames: {conf.input.inputMS[msIdx]}")
+    info(f"Opening file to read the fields: {conf.input.inputMS[msIdx]}")
     msmd = msmetadata()
     msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
     return msmd.fieldnames()
@@ -261,6 +261,20 @@ def write_all_sbatch_files(conf):
     command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
     write_sbtach_file(filename, command, conf, sbatchDict)
 
+    # average map
+    basename = "cube_average_map"
+    filename = basename + ".sbatch"
+    sbatchDict = {
+            'array': "1-1%1",
+            'job-name': basename,
+            'output': "logs/" + basename + "-%A-%a.out",
+            'error': "logs/" + basename + "-%A-%a.err",
+            'cpus-per-task': 1,
+            'mem': "100GB",
+            }
+    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
+    write_sbtach_file(filename, command, conf, sbatchDict)
+
     # generate rmsy input data
     basename = "cube_generate_rmsy_input_data"
     filename = basename + ".sbatch"
@@ -296,32 +310,32 @@ def copy_runscripts(conf):
     for script in conf.input.runScripts:
         shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
 
-def get_chosenField(fieldListList, conf):
+def get_field(fieldListList, conf):
     '''
     '''
-    if conf.input.chosenField:
-        # check if chosenField is in any fieldList
+    if conf.input.field:
+        # check if field is in any fieldList
         flatList = [item for sublist in fieldListList for item in sublist]
-        if conf.input.chosenField in flatList:
-            chosenField = conf.input.chosenField
+        if conf.input.field in flatList:
+            field = conf.input.field
         else:
             # TODO raise a proper error
-            error(f"chosenField \'{conf.input.chosenField}\' is not in {conf.input.inputMS}.")
+            error(f"Field \'{conf.input.field}\' is not in {conf.input.inputMS}.")
             error(f"The following fields are found: {fieldListList}")
             sys.exit()
     elif len(fieldListList) > 1:
         for fieldList in fieldListList[1:]:
             fieldIntersection = set(fieldListList[0]).intersection(fieldList)
             if fieldIntersection:
-                chosenField = fieldIntersection.pop()
+                field = fieldIntersection.pop()
             else:
                 warning(f"Measurement field missmatch please check input data: {fieldListList}")
-                chosenField = "0"
+                field = ""
                 break
     else:
-        chosenField = fieldListList[0][0]
-    info(f"Setting chosenField to: {chosenField}")
-    return chosenField
+        field = fieldListList[0][0]
+    info(f"Setting field to: {field}")
+    return field
 
 @click.command(context_settings=dict(
     ignore_unknown_options=True,
@@ -353,17 +367,17 @@ def main(ctx):
         # data: values derived from the measurement set like valid channels
         data = {}
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
-        print(conf)
 
         # iterate ofer multibple ms. This is necessary to feed tclean with multiple ms at once.
+        data['workingDirectory'] = os.getcwd()
         data['predictedOutputChannels'] = []
-        data['fieldnames'] = []
-        data['chosenField'] = ""
+        data['fields'] = []
+        data['field'] = ""
         for msIdx, inputMS in enumerate(conf.input.inputMS):
             info(SEPERATOR)
             data['predictedOutputChannels'].append(get_unflagged_channelList(conf, msIdx))
-            data['fieldnames'].append(get_fieldnames(conf, msIdx))
-        data['chosenField'] = get_chosenField(data['fieldnames'], conf)
+            data['fields'].append(get_fields(conf, msIdx))
+        data['field'] = get_field(data['fields'], conf)
         update_user_config_data(data)
         # reload conf after data got appended to user conf
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL
+from mightee_pol.lhelpers import DotMap, get_dict_from_click_args
 import sys
+import os
 '''
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -158,6 +160,8 @@ SPECIAL_FLAGS = [
         "--readme",
         "--cancel",
         "--kill",
+        "--status",
+        "-s",
         ]
 
 def check_if_flag_exists(flagList):
@@ -215,8 +219,24 @@ def print_usage():
 def print_readme():
     print(README)
 
-def check_all(flagList, conf):
+def check_path_inputMS(flagList, conf):
+    '''
+    TODO
+    '''
+    print(conf.input.inputMS)
+    if conf.input.inputMS:
+        print("hello")
+        for inputMS in conf.input.inputMS:
+            if not os.path.exists(inputMS):
+                print(f"ERROR: File does not exists {inputMS}")
+                sys.exit()
+
+
+def check_all(flagList):
+    #conf = DotMap(get_dict_from_click_args(flagList))
+    conf = None
     check_flags(flagList, conf)
+    #check_path_inputMS(flagList, conf)
     #check_flags(conf)
 
 

@@ -297,7 +297,7 @@ def fill_cube_with_images(conf, mode="normal"):
     lowestChanNo = get_lowest_channelNo_with_data_in_cube(cubeName)
     addFitsHeaderDict = {
             "CRPIX3": lowestChanNo,
-            "OBJECT": str(conf.data.chosenField),
+            "OBJECT": str(conf.data.field),
             "NAXIS3": highestChannel,
             "CTYPE3": ("FREQ", ""),
             "COMMENT": "Created by IDIA Pipeline"

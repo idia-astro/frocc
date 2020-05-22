@@ -93,7 +93,7 @@ def call_split(channelNumber, conf, msIdx):
         vis=conf.input.inputMS[msIdx],
         outputvis=outputMS,
         observation=conf.input.observation,
-        field=str(conf.data.chosenField),
+        field=str(conf.data.field),
         spw=spw,
         keepmms=False,
         datacolumn=conf.input.datacolumn,

@@ -20,8 +20,8 @@
 """
 
 import itertools
-import logging
-from logging import info, error
+#import logging
+#from logging import info, error
 import os
 import csv
 import datetime
@@ -33,8 +33,9 @@ import click
 import numpy as np
 from astropy.io import fits
 
-from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args
+from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args
 #from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from mightee_pol.logger import *
 
 
 
@@ -42,9 +43,9 @@ from lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
 
-logging.basicConfig(
-    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
-)
+#logging.basicConfig(
+#    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
+#)
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -57,7 +58,7 @@ def make_empty_image(conf, mode="normal"):
     The data cube dimensions are derived from the cube images.
 
     """
-    cubeNameInput = conf.input.basename + ".cube.fits"
+    cubeNameInput = conf.input.basename + ".cube.smoothed.fits"
         
     info(SEPERATOR)
     info(f"Getting image dimension for data cube from: {cubeNameInput}")
@@ -71,7 +72,7 @@ def make_empty_image(conf, mode="normal"):
     info(f"Z-dimension: {zdim}")
 
     info("Assuming full Stokes for dimension W.")
-    wdim = 4
+    wdim = 3
     info("W-dimension: %s", wdim)
 
     dims = tuple([xdim, ydim, zdim, wdim])
@@ -88,7 +89,7 @@ def make_empty_image(conf, mode="normal"):
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
 
-    cubeNameOutput = conf.input.basename + ".cube.average-map.fits"
+    cubeNameOutput = conf.input.basename + ".cube.smoothed.average-map.fits"
 
     header.tofile(cubeNameOutput, overwrite=True)
 
@@ -109,30 +110,6 @@ def make_empty_image(conf, mode="normal"):
 
 
 
-def check_rms(npArray):
-    """
-    Check if the Numpy Array is above 1e-6 uJy/beam.
-
-    If the Numpy Array is not within the range it gets assigned to not a number
-    (np.nan).
-
-    Parameters
-    ----------
-    npArray: numpy.array
-       The numpy array to check
-
-    Returns
-    -------
-    [npArray, std]: list with numpy.array and float
-       List of length 2 with  the Numpy Array and the Standard Deviation
-
-    """
-    std = get_std_via_mad(npArray)
-    if (std < 1e-6):
-        npArray = np.nan
-        std = np.nan
-    return [npArray, std]
-
 
 def write_statistics_file(statsDict, conf, mode="normal"):
     """
@@ -145,18 +122,28 @@ def write_statistics_file(statsDict, conf, mode="normal"):
 
     """
     # Outputs a statistics file with estimates for RMS noise in Stokes I and V
-    filepathStatistics = conf.input.basename + ".cube.statistics.average-map.tab"
-    legendList = ["chanNo", "weight [Jy^-2]"]
+    filepathStatistics = conf.input.basename + ".cube.statistics.smoothed.average-map.tab"
+    legendList = ["chanNo", "frequency [MHz]", "weight [Jy^-2]"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
         writer = csv.writer(csvFile, delimiter="\t")
         csvData = [legendList]
         for ii, entry in enumerate(statsDict["chanNo"]):
             chanNo = statsDict["chanNo"][ii]
+            freq = round(statsDict["frequency"][ii] * 1e-6, 4)
             weight = round(statsDict["weight"][ii] * 1e-6, 4)
-            csvData.append([chanNo, weight])
+            csvData.append([chanNo, freq, weight])
         writer.writerows(csvData)
 
+def calculate_channelFreq_from_header(header, chan):
+    '''
+    '''
+    chanWidth = float(header['CDELT3'])
+    refFreq = float(header['CRVAL3'])
+    refChan = float(header['CRPIX3'])
+    firstFreq = refFreq - (refChan * chanWidth)
+    calcChan = firstFreq + (chan  * chanWidth)
+    return calcChan
 
 
 def fill_cube_with_images(conf, mode="normal"):
@@ -165,13 +152,12 @@ def fill_cube_with_images(conf, mode="normal"):
 
 
     """
-    cubeNameInput = conf.input.basename + ".cube.fits"
-    cubeNameOutput = conf.input.basename + ".cube.average-map.fits"
+    cubeNameInput = conf.input.basename + ".cube.smoothed.fits"
+    cubeNameOutput = conf.input.basename + ".cube.smoothed.average-map.fits"
     info(SEPERATOR)
     info(f"Opening data cube: {cubeNameInput}")
     hudCubeInput = fits.open(cubeNameInput, memmap=True, ignore_missing_end=True, mode="update")
     dataCubeInput = hudCubeInput[0].data
-    print(np.shape(dataCubeInput))
 
     info(f"Opening data cube: {cubeNameOutput}")
     hudCubeOutput = fits.open(cubeNameOutput, memmap=True, ignore_missing_end=True, mode="update")
@@ -182,6 +168,7 @@ def fill_cube_with_images(conf, mode="normal"):
     statsDict = {}
     statsDict["chanNo"] = []
     statsDict["weight"] = []
+    statsDict["frequency"] = []
     for ii in range(0, highestChannel):
         if np.isnan(np.sum(dataCubeInput[3, ii, :, :])):
             w = np.nan
@@ -189,49 +176,46 @@ def fill_cube_with_images(conf, mode="normal"):
             info(f"Getting RMS from Stokes V for channel {ii}")
             rms = get_std_via_mad(dataCubeInput[3, ii, :, :])
             w = 1/(rms**2)
+        calcFreq = calculate_channelFreq_from_header(hudCubeInput[0].header, ii)
+        statsDict["frequency"].append(calcFreq)
         statsDict["weight"].append(w)
         statsDict["chanNo"].append(ii)
 
     P_I = dataCubeOutput[0, 0, :, :]
     P_QU = dataCubeOutput[1, 0, :, :]
-    P_UQ = dataCubeOutput[2, 0, :, :]
-    P_V = dataCubeOutput[3, 0, :, :]
+    P_V = dataCubeOutput[2, 0, :, :]
+    weightedFreqs = 0
     for ii, w in enumerate(statsDict["weight"]):
+        info(f"Processing average maps: Progress {ii+1}/{len(statsDict['weight'])}")
         if not np.isnan(w):
-            info(f"Processing average maps: Progress {ii+1}/{len(statsDict['weight'])}")
             I = dataCubeInput[0, ii, :, :]
             Q = dataCubeInput[1, ii, :, :]
-            info(f"Q: Progress {Q}")
+            #info(f"Q: Progress {Q}")
             U = dataCubeInput[2, ii, :, :]
             V = dataCubeInput[3, ii, :, :]
             P_I += w * np.sqrt(I**2)
             P_QU += w * np.sqrt(Q**2 + U**2)
-            info(f"P_QU: Progress {P_QU}")
+            #info(f"P_QU: Progress {P_QU}")
             P_V += w * np.sqrt(V**2)
+            weightedFreqs += w * np.sqrt(statsDict["frequency"][ii]**2)
     weightsSum = np.nansum(statsDict["weight"])
     dataCubeOutput[0, 0, :, :] = P_I / weightsSum
     dataCubeOutput[1, 0, :, :] = P_QU / weightsSum
-    dataCubeOutput[3, 0, :, :] = P_V / weightsSum
+    dataCubeOutput[2, 0, :, :] = P_V / weightsSum
+    averagedFreq = np.nansum(weightedFreqs) / weightsSum
 
     hudCubeInput.close()
     hudCubeOutput.close()
 
+    addFitsHeaderDict = {
+        "CRPIX3": 1,
+        "NAXIS3": 1,
+        "CRVAL3": averagedFreq,
+        }
+    update_fits_header_of_cube(cubeNameOutput, addFitsHeaderDict)
     write_statistics_file(statsDict, conf, mode=mode)
 
 
-def move_casalogs_to_dirLogs(conf):
-    '''
-    casataks.casalog.setcasalog doesn't seem to work. It instead puts alls casa
-    logs into the working directory. This is just a dirty fix to put the logs
-    in conf.env.dirLogs
-    '''
-    try:
-        info(f"Moving casa log files from working directory to {conf.env.dirLogs}")
-        casalogList = glob("casa*.log")
-        for casalog in casalogList:
-            os.replace(casalog, os.path.join(conf.env.dirLogs, casalog))
-    except:
-        pass
 
 
 #@click.command(context_settings=dict(
@@ -244,11 +228,12 @@ def move_casalogs_to_dirLogs(conf):
 def main():
     #args = DotMap(get_dict_from_click_args(ctx.args))
     conf = get_config_in_dot_notation(templateFilename=".default_config.template", configFilename="default_config.txt")
-    info(f"Scripts config: {conf}")
-    #move_casalogs_to_dirLogs(conf)
-
-    make_empty_image(conf, mode="normal")
-    fill_cube_with_images(conf, mode="normal")
+    if conf.input.smoothbeam:
+        info(f"Scripts config: {conf}")
+        make_empty_image(conf, mode="normal")
+        fill_cube_with_images(conf, mode="normal")
+    else:
+        info(f"No `smoothbeam` specified. Skipping, not creating an average map.")
 
 
 
