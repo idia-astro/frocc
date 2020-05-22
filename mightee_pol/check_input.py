@@ -26,11 +26,15 @@ USAGE='''
  ----------------
  `meerkat-pol --inputMS "/my/data/input1.ms, /my/data/input2.mms" --freqRanges '["900-1000", "1300-1500", "1600-1650"]' --imsize 1024 --niter 500 --threshold 0.0001 --smoothbeam 15arcsec --createConfig --createScripts --start`
 
+ 4. Show the status
+ ------------------
+ merkat-pol --status
+
  5. Canel slurm jobs
  -------------------
  merkat-pol --cancel
 
- 5. Further help
+ 6. Further help
  ---------------
  merkat-pol --readme
  merkat-pol --help

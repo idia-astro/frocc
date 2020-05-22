@@ -49,11 +49,13 @@ def print_status():
     print_header()
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     #check if config in current directory and if meerkat --start has been run
-    if not ( os.path.exists(FILEPATH_CONFIG_TEMPLATE) or os.path.exists(FILEPATH_CONFIG_USER)):
+    if not ( os.path.exists(FILEPATH_CONFIG_TEMPLATE) and os.path.exists(FILEPATH_CONFIG_USER)):
         print(f"ERROR: Could not find `{FILEPATH_CONFIG_TEMPLATE}` and/or `{FILEPATH_CONFIG_USER}`")
         print(f"Is this the right working directory?")
         sys.exit()
-    if not  conf.data.slurmIDList:
+    try:
+        test = conf.data.slurmIDList
+    except:
         print(f"ERROR: No started slurm jobs found.")
         print(f"Did you already run `meerkat-pol --start` in this directory?")
         sys.exit()
