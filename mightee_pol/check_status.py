@@ -48,9 +48,7 @@ def print_status():
         print(f"ERROR: Could not find `{FILEPATH_CONFIG_TEMPLATE}` and/or `{FILEPATH_CONFIG_USER}`")
         print(f"Is this the right working directory?")
         sys.exit()
-    try:
-        test = conf.data.slurmIDList
-    except:
+    if not  conf.data.slurmIDList:
         print(f"ERROR: No started slurm jobs found.")
         print(f"Did you already run `meerkat-pol --start` in this directory?")
         sys.exit()
