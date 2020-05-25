@@ -285,7 +285,7 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     info(SEPERATOR)
     info(f"Generating HDF5 file from: {cubeName}")
     hdf5Outputfile = os.path.join(conf.input.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
-    command = [" ".join([conf.input.hdf5Converter, "-o", hdf5Outputfile, cubeName])]
+    command = [" ".join([conf.input.hdf5Converter, "-s", "-o", hdf5Outputfile, cubeName])]
     info(f"HDF5 command: {command[0]}")
     commandResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
     info(commandResult.stdout.replace("\n", ", "))

@@ -2,8 +2,10 @@
 import subprocess
 import sys
 import os
+import re
 
-from mightee_pol.lhelpers import get_config_in_dot_notation, SEPERATOR, SEPERATOR_HEAVY
+from mightee_pol.check_output import print_output
+from mightee_pol.lhelpers import get_config_in_dot_notation, get_statusList, SEPERATOR, SEPERATOR_HEAVY
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
 
@@ -14,35 +16,14 @@ def print_header():
     header = header[:len(SEPERATOR_HEAVY)]
     print(header)
 
-def get_statusList(conf):
-    '''
-    '''
-    slurmIDcsv = ",".join(list(map(str, conf.data.slurmIDList)))
-    command = f"sacct --jobs={slurmIDcsv} --format=jobname,jobid,state -P --delimiter ' '"
-    #info(f"Slurm command: {command}")
-    print(f"Working directory: {conf.data.workingDirectory}")
-    print(f"Slurm command: {command}")
-    sacctResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-    sacctResultStd = sacctResult.stdout# .replace("\n", " ")
-    #info(sacctResultStd)
-    statusList = sacctResultStd.split("\n")
-    # parse the slurm job ID from sbatchResult
-    if sacctResult.stderr:
-        error(sacctResult.stderr)
-        sys.exit()
-    else:
-        return statusList
 
 def print_slurm_status(statusList, conf):
     for name in [entry.replace(".py","") for entry in conf.input.runScripts]:
         mainJobs = [s for s in statusList if name in s]
         print(mainJobs[0])
-        failedJobList = [s for s in mainJobs if "FAILED" in s]
-        for failedJob in failedJobList:
-            print("  "+failedJob)
-        runningJobList = [s for s in mainJobs if "RUNNING" in s]
-        for runningJob in runningJobList:
-            print("  "+runningJob)
+        importantJobList = [s for s in mainJobs if re.search(r"FAILED|RUNNING", s)]
+        for importantJob in importantJobList:
+            print(f"  {importantJob}")
 
 
 def print_status():
@@ -63,6 +44,7 @@ def print_status():
     print(SEPERATOR)
     print_slurm_status(statusList, conf)
     print(SEPERATOR)
+    print_output()
 
 
 if __name__ == "__main__":

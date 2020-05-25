@@ -139,7 +139,7 @@ def write_user_config_input(args):
                     # convert string to list, split at, strip whitespace and all back to a string again to write it to config
                     value = str([x.strip() for x in list(filter(None, value.split(",")))])
                 if "basename" not in args.keys():
-                    configInputStringArray.append("basename" + " = " + get_basename_from_path(value))
+                    configInputStringArray.append("basename" + " = " + get_basename_from_path(value, withTimestamp=True))
             configInputStringArray.append(key + " = " + value)
 
         # Read the config template file first to populate them into the Default

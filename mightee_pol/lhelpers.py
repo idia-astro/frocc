@@ -10,6 +10,7 @@ import ast
 import functools
 import numpy as np
 import inspect
+import subprocess
 from astropy.io import fits
 from astropy.io import fits
 #from mightee_pol.logger import info, debug, error, warning
@@ -207,7 +208,7 @@ def get_firstFreq(conf):
     firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
     return firstFreq
 
-def get_basename_from_path(filepath):
+def get_basename_from_path(filepath, withTimestamp=False):
     '''
     '''
     try:
@@ -220,7 +221,10 @@ def get_basename_from_path(filepath):
     # get basename frompath
     basename = os.path.basename(basename)
     # remove file extension
-    basename = os.path.splitext(basename)[0] + "." + get_timestamp()
+    if withTimestamp:
+        basename = os.path.splitext(basename)[0] + "." + get_timestamp()
+    else:
+        basename = os.path.splitext(basename)[0]
     return basename
 
 def get_optimal_taskNo_cpu_mem(conf):
@@ -320,3 +324,22 @@ def print_starting_banner(headline):
     info(empty)
 
 
+def get_statusList(conf, noisy=True):
+    '''
+    '''
+    slurmIDcsv = ",".join(list(map(str, conf.data.slurmIDList)))
+    command = f"sacct --jobs={slurmIDcsv} --format=jobname,jobid,state -P --delimiter ' '"
+    #info(f"Slurm command: {command}")
+    if noisy:
+        print(f"Working directory: {conf.data.workingDirectory}")
+        print(f"Slurm command: {command}")
+    sacctResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    sacctResultStd = sacctResult.stdout# .replace("\n", " ")
+    #info(sacctResultStd)
+    statusList = sacctResultStd.split("\n")
+    # parse the slurm job ID from sbatchResult
+    if sacctResult.stderr:
+        error(sacctResult.stderr)
+        sys.exit()
+    else:
+        return statusList
