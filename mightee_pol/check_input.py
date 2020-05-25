@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL
 from mightee_pol.lhelpers import DotMap, get_dict_from_click_args
+from mightee_pol.config import SPECIAL_FLAGS
 import sys
 import os
 '''
@@ -15,7 +16,7 @@ USAGE='''
  1. Usage
  --------
  1. `meerkat-pol --createConfig --inputMS <path to input.ms>`
- 2. `meerkat-pol --createScripts`
+ 2. `meerkat-pol --createScripts [--copyScripts]
  3. `meerkat-pol --start`
  
  2. In one command
@@ -151,22 +152,6 @@ def get_config_dictList():
                 lastKey = ""
     return configDictList
 
-
-            
-
-SPECIAL_FLAGS = [
-        "--help",
-        "-h",
-        "--start",
-        "--usage",
-        "--createConfig",
-        "--createScripts",
-        "--readme",
-        "--cancel",
-        "--kill",
-        "--status",
-        "-s",
-        ]
 
 def check_if_flag_exists(flagList):
     '''

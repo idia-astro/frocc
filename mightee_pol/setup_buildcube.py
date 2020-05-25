@@ -14,6 +14,7 @@ from mightee_pol.logger import *
 
 # own helpers
 from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
+from mightee_pol.config import SPECIAL_FLAGS
 import mightee_pol
 
 os.environ['LC_ALL'] = "C.UTF-8"
@@ -130,7 +131,7 @@ def write_user_config_input(args):
     with open(FILEPATH_CONFIG_USER, 'w') as f:
         for key, value in args.items():
             # don't write these flags to the config file
-            if key in ["createConfig", "createScripts", "start"]:
+            if key in [ item.replace("-", "") for item in SPECIAL_FLAGS]:
                 continue
             if key == "inputMS":
                 try:
@@ -208,7 +209,11 @@ def write_all_sbatch_files(conf):
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
         }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath + ' --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, conf, sbatchDict)
 
     # tclean
@@ -226,7 +231,11 @@ def write_all_sbatch_files(conf):
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
         }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath + ' --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, conf, sbatchDict)
 
     # buildcube
@@ -244,7 +253,11 @@ def write_all_sbatch_files(conf):
             'cpus-per-task': 2,
             'mem': "50GB",
             }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath + ' --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, conf, sbatchDict)
 
     # ior flagging
@@ -258,7 +271,11 @@ def write_all_sbatch_files(conf):
             'cpus-per-task': 1,
             'mem': "100GB",
             }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath
     write_sbtach_file(filename, command, conf, sbatchDict)
 
     # average map
@@ -272,7 +289,11 @@ def write_all_sbatch_files(conf):
             'cpus-per-task': 1,
             'mem': "100GB",
             }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath
     write_sbtach_file(filename, command, conf, sbatchDict)
 
     # generate rmsy input data
@@ -286,7 +307,11 @@ def write_all_sbatch_files(conf):
             'cpus-per-task': 1,
             'mem': "100GB",
             }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath
     write_sbtach_file(filename, command, conf, sbatchDict)
 
     # do_rmsy
@@ -300,7 +325,11 @@ def write_all_sbatch_files(conf):
             'cpus-per-task': 1,
             'mem': "10GB",
             }
-    command = conf.env.prefixSingularity + ' python3 ' + basename + '.py'
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath
     write_sbtach_file(filename, command, conf, sbatchDict)
 
 def copy_runscripts(conf):
@@ -382,10 +411,12 @@ def main(ctx):
         # reload conf after data got appended to user conf
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
+        #if conf.input.copyRunscripts:
+        if "--copyScripts" in ctx.args:
+            copy_runscripts(conf)
+
         write_all_sbatch_files(conf)
 
-        #if conf.input.copyRunscripts:
-        copy_runscripts(conf)
         return None  # ugly but maybe best solution, because of wrapper
 
     if "--start" in ctx.args:

@@ -24,8 +24,9 @@ import subprocess
 from os.path import expanduser
 from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
-from mightee_pol.check_input import check_all, print_usage, print_help, print_readme, SPECIAL_FLAGS
+from mightee_pol.check_input import check_all, print_usage, print_help, print_readme
 from mightee_pol.check_status import print_status
+from mightee_pol.config import SPECIAL_FLAGS
 from mightee_pol.logger import *
 
 

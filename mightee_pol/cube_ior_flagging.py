@@ -113,8 +113,9 @@ def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     ax1.minorticks_on()
 
     ax1.plot(xData, yData, linestyle='None', marker='.', color='green', label="Unflagged")
-    # only for the label
-    ax1.plot(xData[0], yData[0], linestyle='None', marker='.', color='red', label="Flagged")
+    # only for the label/legend to show the right color
+    if outlierIndexSet:
+        ax1.plot(xData[list(outlierIndexSet)[0]], yData[list(outlierIndexSet)[0]], linestyle='None', marker='.', color='red', label="Flagged")
     for i in outlierIndexSet:
         ax1.plot(xData[i], yData[i], linestyle='None', marker='.', color='red')
 
@@ -259,8 +260,6 @@ def get_outlierChanNoList_from_outlierIndexSet(statsDict, outlierIndexSet):
 def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     """
     Flag channels in data cube.
-
-
     """
     if mode == "smoothed":
         cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
