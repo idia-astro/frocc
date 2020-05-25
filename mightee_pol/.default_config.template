@@ -31,13 +31,13 @@ basename = ""
 # TYPE: list(str)
 # TYPE-COMMENT: The String must be two numerics connected by a dash.
 # EXAMPLE: ["890-1000", "1200-1700"]
-freqRanges = ["890-1700"]
+freqRanges = ["880-1680"]
 
 # DESCRIPTION: Specify field name of MS. Leave empty "" for automatically
 # choose the first field in the MS's field list.
 # TYPE: str
 # EXAMPLE: "COSMOS"
-chosenField = ""
+field = ""
 
 # DESCRIPTION: Channel width in [Hz] of the final data cube. CAUTION: CASA
 # deviates from this value slightly in order to match the data within a spw.
@@ -47,8 +47,8 @@ outputChanBandwidth = 2.5e6
 
 # DESCRIPTION: The observation ID of the MS.
 # TYPE: int or str
-# EXAMPLE: 0
-observation = 0
+# EXAMPLE: 0 or "" for all observations
+observation = ""
 
 
 # =============================================================================
@@ -176,7 +176,7 @@ dirHdf5Output = ""
 # DESCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
 # order matters!
 # TYPE: list(str)
-runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py"]
+runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py"]
 
 # DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
 # job-name, cpus-per-task may be overwirtten by the pipline
@@ -208,6 +208,25 @@ prefixSingularity = "singularity exec /idia/software/containers/casa-6-2020-02-2
 #commandSingularity = "python ${HOME}/.local/bin/setup_buildcube"
 commandSingularity = "setup_buildcube"
 #env = {"PATH": "${PATH}:${HOME}/.local/bin/"}
+
+extTcleanImage = ".image.fits"
+extTcleanImageSmoothed = ".image.smoothed.fits"
+
+extCubeIORStatistics = ".cube.statistics.ior-flagged.tab"
+
+extCubeFits = ".cube.fits"
+extCubeHdf5 = ".cube.hdf5"
+extCubeStatistics = ".cube.statistics.tab"
+
+extCubeSmoothedFits = ".cube.smoothed.fits"
+extCubeSmoothedHdf5 = ".cube.smoothed.hdf5"
+extCubeSmoothedStatistics = ".cube.smoothed.statistics.tab"
+
+extCubeAveragemapFits = ".cube.smoothed.average-map.fits"
+extCubeAveragemapStatistics = ".cube.statistics.smoothed.average-map.tab"
+
+outputExtList = ["extCubeIORStatistics",  "extCubeFits", "extCubeHdf5", "extCubeStatistics"]
+outputExtSmoothedList = ["extCubeSmoothedFits", "extCubeSmoothedHdf5", "extCubeSmoothedStatistics", "extCubeAveragemapFits", "extCubeAveragemapStatistics"]
 
 
 # =============================================================================
