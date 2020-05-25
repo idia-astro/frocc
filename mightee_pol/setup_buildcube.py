@@ -79,7 +79,7 @@ def get_fields(conf, msIdx):
     info(f"Opening file to read the fields: {conf.input.inputMS[msIdx]}")
     tb = table()
     tb.open(tablename=conf.input.inputMS[msIdx]+"/FIELD")
-    return tb.getcol('NAME')
+    return list(tb.getcol('NAME'))
 
 def get_unflagged_channelIndexBoolList(conf, msIdx):
     '''
