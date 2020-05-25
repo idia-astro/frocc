@@ -16,14 +16,28 @@ def print_header():
     header = header[:len(SEPERATOR_HEAVY)]
     print(header)
 
+def prepend_status_prefix_symbol(statusString, major=False):
+    prefix = ""
+    if re.search(r"PENDING|RUNNING", statusString):
+        prefix = "?"
+    elif re.search(r"FAILED", statusString):
+        prefix = "\u2718"
+    elif re.search(r"COMPLETE", statusString):
+        prefix = "\u2714"
+    if major:
+        prefix = "[" + prefix + "] "
+    else:
+        prefix = " " + prefix + "  "
+    return prefix + statusString
 
 def print_slurm_status(statusList, conf):
+    psps = prepend_status_prefix_symbol
     for name in [entry.replace(".py","") for entry in conf.input.runScripts]:
         mainJobs = [s for s in statusList if name in s]
-        print(mainJobs[0])
+        print(psps(mainJobs[0], major=True))
         importantJobList = [s for s in mainJobs if re.search(r"FAILED|RUNNING", s)]
         for importantJob in importantJobList:
-            print(f"  {importantJob}")
+            print(f"{psps('  '+importantJob)}")
 
 
 def print_status():

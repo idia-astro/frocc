@@ -58,7 +58,7 @@ def write_statistics_file(statsDict, conf):
        Dictionary with lists for Stokes I and V rms noise
 
     """
-    filepathStatistics = conf.input.basename + ".cube.statistics.ior-flagged.tab"
+    filepathStatistics = conf.input.basename + conf.env.extCubeIORStatistics
     legendList = ["chanNo", "frequency [MHz]",  "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]", "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -263,9 +263,9 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        cubeName = conf.input.basename + ".cube.smoothed.fits"
+        cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
     else:
-        cubeName = conf.input.basename + ".cube.fits"
+        cubeName = conf.input.basename + conf.env.extCubeFits
     info("Flagging channel Number: {0} in {1}".format(chanNoList, cubeName))
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
@@ -309,7 +309,7 @@ def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
 @main_timer
 def main():
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
-    filepathStatistics = conf.input.basename + ".cube.statistics.tab"
+    filepathStatistics = conf.input.basename + conf.env.extCubeStatistics
     statsDict = get_dict_from_tabFile(filepathStatistics)
     initialStatsDict = dict(statsDict)  # make a deep copy
     resultsDict = get_outlierIndex_and_fitStats_dict(statsDict, conf)
@@ -325,7 +325,7 @@ def main():
     # TODO: flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf)
     # TODO: make this nicer
     flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf, mode="normal")
-    if glob("*.cube.smoothed.fits"):
+    if os.path.exists(conf.input.basename + conf.env.extCubeSmoothedFits):
         flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf, mode="smoothed")
 
 if __name__ == "__main__":

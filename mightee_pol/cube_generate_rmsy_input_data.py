@@ -81,7 +81,7 @@ def get_rmsyDict_from_cube(conf):
     Simple not optimized version TODO
 
     """
-    cubeName = conf.input.basename + ".cube.fits"
+    cubeName = conf.input.basename + conf.env.extCubeFits
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
     # TODO: debug: if ignore_missing_end is not true I get an error.

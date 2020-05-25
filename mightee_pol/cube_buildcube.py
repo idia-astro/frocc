@@ -130,9 +130,9 @@ def make_empty_image(conf, mode="normal"):
         header["NAXIS%d" % i] = dim
 
     if mode == "smoothed":
-        cubeName = conf.input.basename + ".cube.smoothed.fits"
+        cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
     else:
-        cubeName = conf.input.basename + ".cube.fits"
+        cubeName = conf.input.basename + conf.env.extCubeFits
 
     header.tofile(cubeName, overwrite=True)
 
@@ -190,9 +190,9 @@ def write_statistics_file(statsDict, conf, mode="normal"):
     """
     # Outputs a statistics file with estimates for RMS noise in Stokes I and V
     if mode == "smoothed":
-        filepathStatistics = conf.input.basename + ".cube.smoothed.statistics.tab"
+        filepathStatistics = conf.input.basename + conf.env.extCubeSmoothedStatistics
     else:
-        filepathStatistics = conf.input.basename + ".cube.statistics.tab"
+        filepathStatistics = conf.input.basename + conf.env.extCubeStatistics
     legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -217,9 +217,9 @@ def fill_cube_with_images(conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        cubeName = conf.input.basename + ".cube.smoothed.fits"
+        cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
     else:
-        cubeName = conf.input.basename + ".cube.fits"
+        cubeName = conf.input.basename + conf.env.extCubeFits
     info(SEPERATOR)
     info(f"Opening data cube: {cubeName}")
     # TODO: debug: if ignore_missing_end is not true I get an error.

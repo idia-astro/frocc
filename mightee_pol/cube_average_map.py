@@ -58,7 +58,7 @@ def make_empty_image(conf, mode="normal"):
     The data cube dimensions are derived from the cube images.
 
     """
-    cubeNameInput = conf.input.basename + ".cube.smoothed.fits"
+    cubeNameInput = conf.input.basename + conf.env.extCubeSmoothedFits
         
     info(SEPERATOR)
     info(f"Getting image dimension for data cube from: {cubeNameInput}")
@@ -89,7 +89,7 @@ def make_empty_image(conf, mode="normal"):
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
 
-    cubeNameOutput = conf.input.basename + ".cube.smoothed.average-map.fits"
+    cubeNameOutput = conf.input.basename + conf.env.extCubeAveragemapFits
 
     header.tofile(cubeNameOutput, overwrite=True)
 
@@ -122,7 +122,7 @@ def write_statistics_file(statsDict, conf, mode="normal"):
 
     """
     # Outputs a statistics file with estimates for RMS noise in Stokes I and V
-    filepathStatistics = conf.input.basename + ".cube.statistics.smoothed.average-map.tab"
+    filepathStatistics = conf.input.basename + conf.env.extCubeAveragemapStatistics
     legendList = ["chanNo", "frequency [MHz]", "weight [Jy^-2]"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
@@ -152,8 +152,8 @@ def fill_cube_with_images(conf, mode="normal"):
 
 
     """
-    cubeNameInput = conf.input.basename + ".cube.smoothed.fits"
-    cubeNameOutput = conf.input.basename + ".cube.smoothed.average-map.fits"
+    cubeNameInput = conf.input.basename + conf.env.extCubeSmoothedFits
+    cubeNameOutput = conf.input.basename + conf.env.extCubeAveragemapFits
     info(SEPERATOR)
     info(f"Opening data cube: {cubeNameInput}")
     hudCubeInput = fits.open(cubeNameInput, memmap=True, ignore_missing_end=True, mode="update")
