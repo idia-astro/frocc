@@ -45,18 +45,28 @@ FILEPATH_LOG_TIMER = "timer.log"
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # HELPER
+#Hey so I just realized there's a much faster way to do the --createScripts step in your pipeline
+#9:03
+#Instead of using msmd try using the tb tool and opening the SPECTRAL_WINDOW subtable
+#9:03
+#You can access it by tb.open('msname::SPECTRAL_WINDOW')
+#9:04
+#and then tb.colnames() will tell you the list of columns in that table, and tb.getcol('chan_freqs') will give you a list of channel frequencies`meerkat --createScripts --copyScripts`
+
 def get_all_freqsList(conf, msIdx):
     """
     Get all the frequencies of all the channels in each spw.
     """
-    from casatools import msmetadata  # work around sice this script get executed in different environments/containers
+    from casatools import table  # work around sice this script get executed in different environments/containers
     allFreqsList = np.array([])
     info(f"Opening file to read the frequency coverage of all channels in each spw: {conf.input.inputMS[msIdx]}")
-    msmd = msmetadata()
-    msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
-    for spw in range(0, msmd.nspw()):
-        allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) + msmd.chanwidths(spw)))
-        allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) - msmd.chanwidths(spw)))
+    #mstb = tb.open(conf.input.inputMS[msIdx] + "::SPECTRAL_WINDOW")
+    tb = table()
+    tb.open(tablename=conf.input.inputMS[msIdx]+"/SPECTRAL_WINDOW")
+    chanFreqArray = tb.getcol('CHAN_FREQ')
+    chanWidthArray = tb.getcol('CHAN_WIDTH')
+    allFreqsList = np.append(allFreqsList, (chanFreqArray + chanWidthArray))
+    allFreqsList = np.append(allFreqsList, (chanFreqArray - chanWidthArray))
     return allFreqsList
 
 
@@ -65,11 +75,11 @@ def get_fields(conf, msIdx):
     Get all the frequencies of all the channels in each spw.
     TODO: put all the msmd in one fuction so that the object is created only once.
     """
-    from casatools import msmetadata  # work around sice this script get executed in different environments/containers
+    from casatools import table  # work around sice this script get executed in different environments/containers
     info(f"Opening file to read the fields: {conf.input.inputMS[msIdx]}")
-    msmd = msmetadata()
-    msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
-    return msmd.fieldnames()
+    tb = table()
+    tb.open(tablename=conf.input.inputMS[msIdx]+"/FIELD")
+    return tb.getcol('NAME')
 
 def get_unflagged_channelIndexBoolList(conf, msIdx):
     '''
