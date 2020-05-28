@@ -91,7 +91,10 @@ def check_final_output_files(conf):
         outputExtList += conf.env.outputExtSmoothedList
     # 
     for outputExt in outputExtList:
-        filePath = conf.input.basename + conf.env[outputExt]
+        if conf.env[outputExt].lower().endswith(".hdf5"):
+            filePath = os.path.join(conf.input.dirHdf5Output, conf.input.basename + conf.env[outputExt])
+        else:
+            filePath = conf.input.basename + conf.env[outputExt]
         if os.path.exists(filePath):
             foundOutputFileList.append(filePath)
         else:

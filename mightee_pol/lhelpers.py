@@ -343,3 +343,14 @@ def get_statusList(conf, noisy=True):
         sys.exit()
     else:
         return statusList
+
+def calculate_channelFreq_from_header(header, chanIdx):
+    '''
+    '''
+    chanWidth = float(header['CDELT3'])
+    refFreq = float(header['CRVAL3'])
+    refChan = float(header['CRPIX3'])
+    firstFreq = refFreq - (refChan * chanWidth)
+    calcChan = firstFreq + (chanIdx  * chanWidth)
+    return calcChan
+

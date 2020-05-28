@@ -279,7 +279,7 @@ def write_all_sbatch_files(conf):
             'output': "logs/" + basename + "-%A-%a.out",
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 1,
-            'mem': "100GB",
+            'mem': str(tcleanSlurm['mem']) + "GB",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
