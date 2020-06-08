@@ -103,12 +103,12 @@ cell = 1.5
 # DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
-gridder = "wproject"
+gridder = "standard"
 
 # DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: int
-wprojplanes = -1
+wprojplanes = 64
 
 # DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html

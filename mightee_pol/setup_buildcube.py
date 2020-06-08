@@ -55,6 +55,7 @@ FILEPATH_LOG_TIMER = "timer.log"
 
 def get_all_freqsList(conf, msIdx):
     """
+    Problem: Gets all frequencies in frequency range, not only the valid ones!
     Get all the frequencies of all the channels in each spw.
     """
     from casatools import table  # work around sice this script get executed in different environments/containers
@@ -67,6 +68,20 @@ def get_all_freqsList(conf, msIdx):
     chanWidthArray = tb.getcol('CHAN_WIDTH')
     allFreqsList = np.append(allFreqsList, (chanFreqArray + chanWidthArray))
     allFreqsList = np.append(allFreqsList, (chanFreqArray - chanWidthArray))
+    return allFreqsList
+
+def get_all_freqsList_old(conf, msIdx):
+    """
+    Get all the frequencies of all the channels in each spw.
+    """
+    from casatools import msmetadata  # work around sice this script get executed in different environments/containers
+    allFreqsList = np.array([])
+    info(f"Opening file to read the frequency coverage of all channels in each spw: {conf.input.inputMS[msIdx]}")
+    msmd = msmetadata()
+    msmd.open(msfile=conf.input.inputMS[msIdx], maxcache=10000)
+    for spw in range(0, msmd.nspw()):
+        allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) + msmd.chanwidths(spw)))
+        allFreqsList = np.append(allFreqsList, (msmd.chanfreqs(spw) - msmd.chanwidths(spw)))
     return allFreqsList
 
 
@@ -190,8 +205,8 @@ def create_directories(conf):
     """
     """
     for directory in list(conf.env.dirList):
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        if not os.path.exists(conf.env[directory]):
+            os.makedirs(conf.env[directory])
 
 
 def write_all_sbatch_files(conf):
@@ -278,7 +293,7 @@ def write_all_sbatch_files(conf):
             'job-name': basename,
             'output': "logs/" + basename + "-%A-%a.out",
             'error': "logs/" + basename + "-%A-%a.err",
-            'cpus-per-task': 1,
+            'cpus-per-task': 8,
             'mem': str(tcleanSlurm['mem']) + "GB",
             }
     if os.path.exists(basename + ".py"):
@@ -298,6 +313,24 @@ def write_all_sbatch_files(conf):
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 1,
             'mem': "100GB",
+            }
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath
+    write_sbtach_file(filename, command, conf, sbatchDict)
+
+    # report
+    basename = "cube_report"
+    filename = basename + ".sbatch"
+    sbatchDict = {
+            'array': "1-1%1",
+            'job-name': basename,
+            'output': "logs/" + basename + "-%A-%a.out",
+            'error': "logs/" + basename + "-%A-%a.err",
+            'cpus-per-task': 1,
+            'mem': "10GB",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"

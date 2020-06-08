@@ -178,8 +178,19 @@ def check_flag_type(flagList, conf):
     configDictList = get_config_dictList()
 
 
+def check_if_inputMS_and_createScrits_come_together(flagList):
+    '''
+    '''
+    if bool("--inputMS" in flagList) ^ bool("--createConfig" in flagList):
+        print(f' ERROR: --inputMS <inputFile> and --createConfig must be used together.')
+        print()
+        print(f' `meerkat-pol --help` to list all valid flags')
+        sys.exit()
+    
+
 def check_flags(flagList, conf):
     check_if_flag_exists(flagList)
+    check_if_inputMS_and_createScrits_come_together(flagList)
 
 def print_help():
     configDictList = get_config_dictList()

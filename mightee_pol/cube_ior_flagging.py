@@ -5,9 +5,10 @@ import numpy as np
 import logging
 import csv
 from numpy.polynomial.polynomial import polyfit
-#import seaborn as sns
-from matplotlib import pyplot as plt
+import seaborn as sns
 import matplotlib as mpl
+mpl.use('Agg') # Backend that doesn't need X server
+from matplotlib import pyplot as plt
 from scipy.stats import linregress
 from scipy import optimize
 from astropy.io import fits
@@ -15,7 +16,7 @@ from glob import glob
 import os
 
 from scipy import *
-from mightee_pol.lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer, update_CRPIX3, SEPERATOR
+from mightee_pol.lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer, update_CRPIX3, SEPERATOR, run_command_with_logging, get_dict_from_tabFile, format_legend
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from logging import info, error
 import subprocess
@@ -32,21 +33,14 @@ logging.basicConfig(
 
 #sns.set(font_scale=1.5)
 #plt.rcParams.update({'font.size': 12})
-mpl.use('Agg') # Backend that doesn't need X server
 mpl.rcParams['xtick.labelsize'] = 22
 mpl.rcParams['ytick.labelsize'] = 22
 mpl.rcParams['axes.titlesize'] = 26
-#sns.set_style("ticks")
+sns.set_style("ticks")
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def format_legend(item):
-    # remove everything after the first [
-    index = item.find('[')
-    if index > 0:
-        item = item[0:index]
-    return item.strip()
 
 def write_statistics_file(statsDict, conf):
     """
@@ -74,20 +68,6 @@ def write_statistics_file(statsDict, conf):
             csvData.append([chanNo, freq, rmsI, rmsV, maxI, flagged])
         writer.writerows(csvData)
 
-
-def get_dict_from_tabFile(tabFile):
-    allStatsDict = {}
-    with open(tabFile) as f:
-        lines = f.read().splitlines()
-        # initialize dict
-        for key in lines[0].split('\t'):
-            allStatsDict[format_legend(key)] = []
-        for line in lines[1:]:
-            for i, key in enumerate(allStatsDict):
-                allStatsDict[key].append(eval(line.split('\t')[i]))
-    return allStatsDict
-
-
 # polyom to fit
 def h(x, a, b, c, d):
     x = np.array(x)
@@ -107,7 +87,7 @@ def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     fig, ax1 = plt.subplots(figsize=(16,8))
     ax1.set_title(r'Iterative outlier rejection, iteration ' + str(iteration))
     ax1.set_xlabel(r'channel',fontsize=22)
-    ax1.set_ylabel(r'RMS [µJ ybeam$^{-1}$]',fontsize=22)
+    ax1.set_ylabel(r'RMS [µJy beam$^{-1}$]',fontsize=22)
     ax1.grid(b=True, which='major', linestyle='dashed')
     ax1.grid(b=True, which='minor', linestyle='dotted')
     ax1.minorticks_on()
@@ -284,13 +264,8 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     info(SEPERATOR)
     info(f"Generating HDF5 file from: {cubeName}")
     hdf5Outputfile = os.path.join(conf.input.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
-    command = [" ".join([conf.input.hdf5Converter, "-s", "-o", hdf5Outputfile, cubeName])]
-    info(f"HDF5 command: {command[0]}")
-    commandResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-    info(commandResult.stdout.replace("\n", ", "))
-    if commandResult.stderr:
-        error(commandResult.stderr)
-    info(SEPERATOR)
+    command = " ".join([conf.input.hdf5Converter, "-s", "-o", hdf5Outputfile, cubeName])
+    run_command_with_logging(command)
 
 def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):
     '''

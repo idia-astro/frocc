@@ -1,0 +1,149 @@
+{% raw %}
+---
+# Einstellungen für das Programm Pandoc
+# http://pandoc.org/
+title: "Report `meerkat-pol`"
+author: IDIA pipeline
+date: \today\space{% endraw %}-- {{timestamp}} {% raw %}
+geometry: "left=2.5cm,right=2.5cm,top=2cm,bottom=2cm"
+output: pdf_document
+# Inhaltsverzeichnis
+# toc: true
+# Sprache
+lang: en
+toc: true
+numbersections: true
+#documentclass: scrbook
+#output:
+#  bookdown::pdf_book:
+#    template: null
+# load latex packages
+header-includes:
+    - \tracingmacros=1 
+    - \usepackage{lmodern}
+    - \renewcommand{\familydefault}{\sfdefault}
+    - \usepackage{float}
+    - \floatplacement{figure}{H}
+#    - \usepackage[skip=2pt,labelsep=bar,font={small,sf},labelfont=bf,justification=justified]{caption}
+    - \usepackage[skip=2pt,font={small,sf},labelfont=bf,justification=justified]{caption}
+    - \DeclareCaptionLabelSeparator{bar}{ | }
+    - \captionsetup[wrapfigure]{name=Fig.}
+#    - \usepackage{inconsolata}
+#    - \renewcommand{\tablename}{Fig.}
+#    - \renewcommand{\tablename}{Tab.}
+    - \captionsetup[figure]{name=Fig.}
+    - \captionsetup{skip=2pt,labelsep=bar,font={small,sf},labelfont={small,sf,bf},justification=justified}
+#    - \renewcommand*{\ttdefault}{\color{red}}
+    - \renewcommand{\texttt}[1]{{\ttfamily\color{teal}#1}}
+#    - \usepackage{tdclock}
+    - \usepackage{hyperref}
+    - \usepackage{datetime}
+    - \usepackage{xkeyval}
+    - \usepackage{xcolor}
+    - \usepackage[12h=false]{scrtime}
+    - \usepackage{fontspec}
+    - \usepackage{fvextra}
+#    - \usepackage{show2e}
+    - \renewcommand{\NormalTok}[1]{\FancyVerbBreakStart#1\FancyVerbBreakStop}
+    - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},numbers=left}
+# ACHTUG: Das fancyhdr Paket hat Fehler beim compilieren verursacht. Ein workaround ist es die fancyhdr Pakete direkt in ein template (template.latex) zu schreiben und dann mit diesem template zu compilieren.
+    - \usepackage{lastpage}
+    - \usepackage{fancyhdr}
+{% endraw %}    - \fancyhead[L]{\texttt{merkat-pol}\text{:} {{ conf.input.basename }} }{% raw %}
+    - \fancyhead[R]{}
+    - \fancyfoot[L]{\today\space -- \thistime}
+    - \fancyfoot[C]{}
+    - \fancyfoot[R]{{\textbf\thepage}\space | \pageref{LastPage}}
+#    - \fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{}\fancyfoot[R]{{\textbf \thepage} | \pageref{LastPage}}}
+    - \pagestyle{fancy}
+    - \fancypagestyle{plain}{\pagestyle{fancy}\fancyfoot[L]{}}
+#    - \fancyfoot[CO,CE]{Kompiliert am \today\ um \thistime\ -- \initclock Gedruckt um \tdclock}
+#    - \fancyfoot[LE,RO]{\thepage}
+# Damit der footer auf TOC erscheint
+#    - \fancypagestyle{plain}
+# compiling for html
+# pandoc -s --toc -o dokumentation_silentmaxx.html dokumentation_silentmaxx.md --css "../static/css/pandoc.css" -f markdown -t html5 --number-sections
+# compiling for pdf
+# pandoc --toc -o dokumentation_silentmaxx.pdf dokumentation_silentmaxx.md --template=template.latex --pdf-engine=xelatex
+highlight-style: tango
+monofont: DejaVuSansMono.ttf 
+
+---
+{% endraw %}
+
+Summary
+=======
+The `meerkat-pol` cube pipeline finished successfully for cube:
+**{{ conf.input.basename }}** . For the frequency ranges 
+**{{ conf.input.freqRanges | join('`, `') }} MHz**
+at a channel width
+**{{ conf.input.outputChanBandwidth /1000000|round(2) }} MHz**
+{{ chanStatsDict['predicted'] }} output channels are predicted.
+{% if chanStatsDict['predicted'] > chanStatsDict['imaged'] -%}
+Due to missing data within the specified frequency range only
+{{ chanStatsDict['imaged'] }} channels contain image data.
+{%- endif %}
+{{ chanStatsDict['iorflagged'] }} channels are flagged due to high noise. The data cube contains 
+**{{ chanStatsDict['unflagged'] }} unflagged channels**, which is
+**{{ chanStatsDict['ratio'] }}%** of the predicted count.
+
+A preview of the generated images is shown below.
+
+![**Preview**: Full stokes image IQUV (left to right) for one channel. Automatic 
+colorscale per image (not comparable). Corresponding file:
+{{ conf.input.basename + conf.env.extCubeFits}}]({{ joinpath(conf.env.dirReport, conf.input.basename + conf.env.extCubePreviewJpg) }} )
+
+{% if conf.input.smoothbeam  %}
+![**Preview**: Weighted average maps Stokes I, scalar P and Stokev V.
+Corresponding file: {{ conf.input.basename + conf.env.extCubeSmoothedFits}}]({{ joinpath(conf.env.dirReport, conf.input.basename + conf.env.extCubeAveragemapPreviewJpg) }} )
+{% endif %}
+
+
+Pipeline status
+===============
+This is the output of the command `meerkat-pol --status`. It shows which of the
+slurm jobs ran successfully or failed. Also, checks on the output files are shown.
+
+~~~~{.numberLines}
+{{ status }}
+~~~~
+
+RMS Noise via Stokes V and flagging
+===================================
+The plot below shows the RMS noise, estimated via the absolute median deviation,
+derived from Stokes V. Very noisy channels are flagged by an iterative outlier
+rejection.
+
+![**RMS noise over frequency and iterative outlier rejection:** The RMS noise is
+measured via the median Absolute deviation. The initial data is fitted with a
+third order polynomial. All data below and above $8 \sigma$ is flagged. This
+repeats until no new data gets rejected. This plot of the final iteration is
+shown here.]({{ iorPlotFilePath }} )
+
+Input parameter
+===============
+This is the list of all user input parameters for this run of `meerkat-pol`.
+
+~~~~{.numberLines}{%for key, value in conf.input.items()%}
+{% if value == "" %}{{ key }} = "" {% else %}{{ key }} = {{ value }}{% endif %}{%endfor%}
+~~~~
+
+
+CASA listobs()
+==============
+This is the output short output of CASA's `listobs(..., verbose=False)`.
+It shows observation details for input measurement sets.
+{% for listobsFile in listobsOutputList %}
+~~~~{.numberLines}
+{{ listobsFile }}
+~~~~
+{% endfor %}
+
+Runtime
+=======
+The `meerkat-pol` cube pipeline ran in {{ runtimeDict['humanAuto'] }} in human time. The accumulated time on
+all computer nodes is {{ runtimeDict['totalAuto'] }}. The following script are executed in sequential order:
+`{{ conf.input.runScripts | join('`, `') }}`. Multiple instances of the same script
+may be spawned in parallel.
+
+![**Cube pipeline runtime:** The plot show the runtime for each slurm job colour-coded by python script.]({{ joinpath(conf.env.dirReport, conf.input.basename + conf.env.extRuntimePdf) }} "Caption")

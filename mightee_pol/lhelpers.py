@@ -9,8 +9,10 @@ import os
 import ast
 import functools
 import numpy as np
+from numpy import nan
 import inspect
 import subprocess
+import sys
 from astropy.io import fits
 from astropy.io import fits
 #from mightee_pol.logger import info, debug, error, warning
@@ -23,8 +25,10 @@ from mightee_pol.logger import *
 #    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 #)
 
-SEPERATOR = "-------------------------------------------------------------------------------"
-SEPERATOR_HEAVY = "==============================================================================="
+SEPERATOR = "-"*79
+SEPERATOR_HEAVY = "="*79
+SEPERATOR_SOFT = "- " * 79
+SEPERATOR_SOFT = SEPERATOR_SOFT[:80]
 
 
 class DotMap(dict):
@@ -178,12 +182,12 @@ def get_mad(a, axis=None):
     """
     # Median along given axis, but *keeping* the reduced axis so that
     # result can still broadcast against a.
-    med = np.nanmedian(a, axis=axis, keepdims=True)
+    med = np.nanmedian(a, axis=axis, keepdims=False)
     mad = np.nanmedian(np.absolute(a - med), axis=axis)  # MAD along given axis
     return mad
 
 
-def get_std_via_mad(npArray):
+def get_std_via_mad(npArray, axis=None):
     """
     Estimate standard deviation via Median Absolute Deviation.
 
@@ -199,7 +203,7 @@ def get_std_via_mad(npArray):
        Standard Deviation from MAD
 
     """
-    mad = get_mad(npArray)
+    mad = get_mad(npArray, axis=axis)
     std = 1.4826 * mad
     return std
 
@@ -268,8 +272,11 @@ def get_optimal_taskNo_cpu_mem(conf):
     return optimalDict
 
 
-def get_timestamp():
-    return datetime.datetime.now().strftime("%Y%m%d")
+def get_timestamp(strformat=None):
+    if strformat:
+        return datetime.datetime.now().strftime(strformat)
+    else:
+        return datetime.datetime.now().strftime("%Y%m%d")
 
 
 def update_fits_header_of_cube(filepathCube, headerDict):
@@ -354,3 +361,50 @@ def calculate_channelFreq_from_header(header, chanIdx):
     calcChan = firstFreq + (chanIdx  * chanWidth)
     return calcChan
 
+def read_file_as_string(filepath):
+    '''
+    '''
+    with open(filepath, 'r') as f:
+        return f.read()
+
+def write_file_from_string(filepath, contentString):
+    '''
+    '''
+    with open(filepath, "w") as f:
+        return f.write(contentString)
+
+def run_command_with_logging(command):
+    '''
+    TODO: return error code?
+    '''
+    info(SEPERATOR_SOFT)
+    info(f"Running command outside of python environment. Error messages may not be reliable.")
+    info(f"Command: {command}")
+    cmdResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+    cmdResultStdList = cmdResult.stdout.split("\n")
+    for cmdResultStd in cmdResultStdList:
+        info(cmdResultStd)
+    if cmdResult.stderr:
+        cmdResultStderrList = cmdResult.stderr.split("\n")
+        for cmdResultStderr in cmdResultStderrList:
+            error(cmdResultStderr)
+    info(SEPERATOR_SOFT)
+
+def format_legend(item):
+    # remove everything after the first [
+    index = item.find('[')
+    if index > 0:
+        item = item[0:index]
+    return item.strip()
+
+def get_dict_from_tabFile(tabFile):
+    allStatsDict = {}
+    with open(tabFile) as f:
+        lines = f.read().splitlines()
+        # initialize dict
+        for key in lines[0].split('\t'):
+            allStatsDict[format_legend(key)] = []
+        for line in lines[1:]:
+            for i, key in enumerate(allStatsDict):
+                allStatsDict[key].append(eval(line.split('\t')[i]))
+    return allStatsDict

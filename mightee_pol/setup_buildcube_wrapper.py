@@ -43,14 +43,8 @@ PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/op
 
 PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/:/idia/users/lennart/from-data-scratchtmp/lennart/devel/mightee_pol/"
 
-try:
-    os.environ['PATH'] = os.environ['PATH'] + ":" + PATH_QUICKFIX
-except:
-    os.environ['PATH'] = PATH_QUICKFIX
-try:
-    os.environ['PYTHONPATH'] = os.environ['PYTHONPATH'] + ":" + PYTHONPATH_QUICKFIX
-except:
-    os.environ['PYTHONPATH'] = PYTHONPATH_QUICKFIX
+os.environ['PATH'] = ":".join([os.environ.get('PATH'), PATH_QUICKFIX])
+os.environ['PYTHONPATH'] = ":".join([os.environ.get('PYTHONPATH'), PYTHONPATH_QUICKFIX])
 
 
 @click.command(context_settings=dict(
