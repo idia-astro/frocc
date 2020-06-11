@@ -30,6 +30,9 @@ SEPERATOR_HEAVY = "="*79
 SEPERATOR_SOFT = "- " * 79
 SEPERATOR_SOFT = SEPERATOR_SOFT[:80]
 
+os.environ['LC_ALL'] = "C.UTF-8"
+os.environ['LANG'] = "C.UTF-8"
+
 
 class DotMap(dict):
     """
@@ -155,9 +158,13 @@ def write_sbtach_file(filename, command, conf, sbatchDict={}):
             for key, value in defaultDict.items():
                 sbatchScript += "\n#SBATCH --" + key + "=" + str(value)
 
-            sbatchScript += "\n\ncat /etc/hostname" 
-            sbatchScript += "\nulimit -a" 
+            sbatchScript += "\n\ncat /etc/hostname"
+            sbatchScript += "\nulimit -a"
+            sbatchScript += "\n\necho users before and after running command:"
+            sbatchScript += "\nps aux | awk '{ print $1 }' | sed '1 d' | sort | uniq " 
             sbatchScript += "\n\n" + command
+            sbatchScript += "\n\n"
+            sbatchScript += "\nps aux | awk '{ print $1 }' | sed '1 d' | sort | uniq " 
             f.write(sbatchScript)
 
 #write_sbtach_file("test.sbtach", "echo hi", {'job-name': "testestest", 'hi': 3})
@@ -334,22 +341,27 @@ def print_starting_banner(headline):
 def get_statusList(conf, noisy=True):
     '''
     '''
-    slurmIDcsv = ",".join(list(map(str, conf.data.slurmIDList)))
-    command = f"sacct --jobs={slurmIDcsv} --format=jobname,jobid,state -P --delimiter ' '"
-    #info(f"Slurm command: {command}")
-    if noisy:
-        print(f"Working directory: {conf.data.workingDirectory}")
-        print(f"Slurm command: {command}")
-    sacctResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-    sacctResultStd = sacctResult.stdout# .replace("\n", " ")
-    #info(sacctResultStd)
-    statusList = sacctResultStd.split("\n")
-    # parse the slurm job ID from sbatchResult
-    if sacctResult.stderr:
-        error(sacctResult.stderr)
-        sys.exit()
-    else:
-        return statusList
+    try:
+        slurmIDcsv = ",".join(list(map(str, conf.data.slurmIDList)))
+        command = f"sacct --jobs={slurmIDcsv} --format=jobname,jobid,state -P --delimiter ' '"
+        #info(f"Slurm command: {command}")
+        if noisy:
+            print(f"Working directory: {conf.data.workingDirectory}")
+            print(f"Slurm command: {command}")
+        sacctResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
+        sacctResultStd = sacctResult.stdout# .replace("\n", " ")
+        #info(sacctResultStd)
+        statusList = sacctResultStd.split("\n")
+        # parse the slurm job ID from sbatchResult
+        if sacctResult.stderr:
+            error(sacctResult.stderr)
+            sys.exit()
+        else:
+            return statusList
+    except Exception as e:
+        warning("Could not find `saccl` to get slurm statistics. Ignoring it.")
+        warning(e)
+        return []
 
 def calculate_channelFreq_from_header(header, chanIdx):
     '''
@@ -364,13 +376,13 @@ def calculate_channelFreq_from_header(header, chanIdx):
 def read_file_as_string(filepath):
     '''
     '''
-    with open(filepath, 'r') as f:
+    with open(filepath, 'r', encoding='utf-8') as f:
         return f.read()
 
 def write_file_from_string(filepath, contentString):
     '''
     '''
-    with open(filepath, "w") as f:
+    with open(filepath, 'w', encoding='utf-8') as f:
         return f.write(contentString)
 
 def run_command_with_logging(command):

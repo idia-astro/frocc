@@ -36,22 +36,25 @@ import aplpy
 
 from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header, read_file_as_string, write_file_from_string, get_timestamp, run_command_with_logging, get_dict_from_tabFile
 from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from mightee_pol.check_status import print_status
+from mightee_pol.check_output import print_output
 from mightee_pol.config import FORMAT_LOGS_TIMESTAMP, FILEPATH_JINJA_TEMPLATE
 from mightee_pol.logger import *
+
+os.environ['LC_ALL'] = "C.UTF-8"
+os.environ['LANG'] = "C.UTF-8"
 
 
 def send_email_via_api(conf, failed=False):
     transferID = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(6))
     email = conf.input.email
-    username = getpass.getuser()
+    username = getpass.getuser().capitalize()
     if failed:
         subject = f"[ meerkat-pol ] Failed cube {conf.input.basename}"
-        oneLineStatus = "the cube creation has failed. I am sorry :("
+        oneLineStatus = "the cube creation has failed. You can have  look below and run `meerkat-pol --status` within the working directory to to get a better idea of what went wrong."
     else:
         subject = f"[ meerkat-pol ] New cube {conf.input.basename}"
         oneLineStatus = "the cube creation finished successfully."
-    status = get_meerkatpol_std_output()
+    status = get_meerkatpol_check_output()
     body = f'Hi {username},\n\n{oneLineStatus}\n\n```\n{status}\n```\n\nLieben Gruß,\nLennart\'s IDIA API'
 
     info(f"Sending report to {conf.input.email}")
@@ -119,15 +122,15 @@ def generate_preview_jpg(conf, mode=None):
     info(f"Saving: {savePath}")
     fList[-1].save(savePath, adjust_bbox='tight')
 
-def get_meerkatpol_std_output():
+def get_meerkatpol_check_output():
     result = StringIO()
     sys.stdout = result
-    print_status()
+    print_output()
     return result.getvalue()
 
 def write_jinja_reportTemplate(conf):
     #old_stdout = sys.stdout
-    status = get_meerkatpol_std_output()
+    status = get_meerkatpol_check_output()
     listobsOutputList = [ read_file_as_string(s) for s in write_listobs_for_inputMS_and_get_filenames(conf) ]
     timestamp = get_timestamp("%H:%M:%S")
     chanStatsDict = get_cube_channel_statsDict(conf)
@@ -302,7 +305,8 @@ def get_cube_channel_statsDict(conf):
 
 
 def report_all(conf):
-    try:
+#    try:
+    if True:
         generate_plot_runtimes(conf)
         generate_preview_jpg(conf)
         if conf.input.smoothbeam:
@@ -313,12 +317,12 @@ def report_all(conf):
         info("Report created.")
         if conf.input.email:
             send_email_via_api(conf)
-    except Exception as e:
-        error("Report could not be created.")
-        error(e)
-        if conf.input.email:
-            send_email_via_api(conf, failed=True)
-
+    #except Exception as e:
+    #    error("Report could not be created.")
+    #    error(e)
+    #    if conf.input.email:
+    #        send_email_via_api(conf, failed=True)
+#
 
 
 #@click.command(context_settings=dict(

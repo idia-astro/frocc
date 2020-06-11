@@ -176,12 +176,16 @@ dirHdf5Output = ""
 # DESCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
 # order matters!
 # TYPE: list(str)
-runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py"]
+runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py"]
 
 # DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
 # job-name, cpus-per-task may be overwirtten by the pipline
 # TYPE: dict
 slurmDefaultHeader = {'array': '1-30%30', 'nodes': 1, 'ntasks-per-node': 1,'cpus-per-task': 4, 'mem': "29GB", 'job-name': "NoName", 'output': '/logs/NoName-%A-%a.out', 'error': '/logs/NoName-%A-%a.err', 'partition': "Main", 'time': "24:00:00", 'account': "b03-idia-ag"}
+
+# DESCRIPTION: E-mail address the report should be sent to.
+# TYPE: str
+email = ""
 
 
 # =============================================================================
@@ -194,13 +198,15 @@ dirPlots = "plots/"
 dirRMSYplots = "rmsy-plots/"
 dirRMSYdata = "rmsy-data/"
 #dirList = ["logs/", "images/", "vis/", "plots/", "rmsy-plots/", "rmsy-data/"]
-dirList = ["logs/", "images/", "vis/", "plots/"]
+dirReport = "report/"
+#dirList = ["logs/", "images/", "vis/", "plots/", "rmsy-plots/", "rmsy-data/"]
+dirList = ["dirLogs", "dirImages", "dirVis", "dirPlots", "dirReport"]
 
 # string marker for channel files
 markerChannel = ".chan"
 
 
-prefixSingularity = "singularity exec /idia/software/containers/casa-6-2020-02-26.simg"
+prefixSingularity = "singularity exec /users/lennart/container/meerkat-pol.simg"
 #prefixSingularity = "singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 
 # The container and headnode have different python3 paths, hence the python3 $HOME...
@@ -217,6 +223,7 @@ extCubeIORStatistics = ".cube.statistics.ior-flagged.tab"
 extCubeFits = ".cube.fits"
 extCubeHdf5 = ".cube.hdf5"
 extCubeStatistics = ".cube.statistics.tab"
+extCubePreviewJpg = ".cube.preview.jpg"
 
 extCubeSmoothedFits = ".cube.smoothed.fits"
 extCubeSmoothedHdf5 = ".cube.smoothed.hdf5"
@@ -224,10 +231,25 @@ extCubeSmoothedStatistics = ".cube.smoothed.statistics.tab"
 
 extCubeAveragemapFits = ".cube.smoothed.average-map.fits"
 extCubeAveragemapStatistics = ".cube.statistics.smoothed.average-map.tab"
+extCubeAveragemapPreviewJpg = ".cube.smoothed.average-map.preview.jpg"
 
 outputExtList = ["extCubeIORStatistics",  "extCubeFits", "extCubeHdf5", "extCubeStatistics"]
 outputExtSmoothedList = ["extCubeSmoothedFits", "extCubeSmoothedHdf5", "extCubeSmoothedStatistics", "extCubeAveragemapFits", "extCubeAveragemapStatistics"]
 
+# DESCRIPTION: The API url to talk to.
+# TYPE: str
+apiUrl = "https://idia-api.lennartheino.de/v1/upload"
+
+envVarApikey = 'MEERKAT_POL_APIKEY'
+
+commandCasa5 = "casa --nogui --log2term -c "
+commandPandoc = "pandoc --latex-engine=xelatex --highlight-style=tango -o "
+extShortListobs = ".short-listobs.txt"
+extReportMD = ".report.md"
+extReportPdf = ".report.pdf"
+extReportTemplate = ".report.template.md"
+
+extRuntimePdf = ".runtime.pdf"
 
 # =============================================================================
 # Values to help optimizing cluster load

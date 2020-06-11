@@ -96,6 +96,7 @@ def call_split(channelNumber, conf, msIdx):
         field=str(conf.data.field),
         spw=spw,
         keepmms=False,
+        keepflags=False,
         datacolumn=conf.input.datacolumn,
     )
 

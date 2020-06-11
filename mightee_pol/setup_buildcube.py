@@ -53,7 +53,7 @@ FILEPATH_LOG_TIMER = "timer.log"
 #9:04
 #and then tb.colnames() will tell you the list of columns in that table, and tb.getcol('chan_freqs') will give you a list of channel frequencies`meerkat --createScripts --copyScripts`
 
-def get_all_freqsList(conf, msIdx):
+def get_all_freqsList_tmp(conf, msIdx):
     """
     Problem: Gets all frequencies in frequency range, not only the valid ones!
     Get all the frequencies of all the channels in each spw.
@@ -70,7 +70,7 @@ def get_all_freqsList(conf, msIdx):
     allFreqsList = np.append(allFreqsList, (chanFreqArray - chanWidthArray))
     return allFreqsList
 
-def get_all_freqsList_old(conf, msIdx):
+def get_all_freqsList(conf, msIdx):
     """
     Get all the frequencies of all the channels in each spw.
     """
@@ -330,7 +330,7 @@ def write_all_sbatch_files(conf):
             'output': "logs/" + basename + "-%A-%a.out",
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 1,
-            'mem': "10GB",
+            'mem': "30GB",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"

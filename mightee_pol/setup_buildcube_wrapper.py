@@ -15,6 +15,7 @@
 -------------------------------------------------------------------------------
 '''
 import os
+import time
 # must come before `import click`
 os.environ['LC_ALL'] = "C-UTF-8"
 os.environ['LANG'] = "C-UTF-8"
@@ -85,6 +86,9 @@ def main(ctx):
     if "--start" in ctx.args:
         print_starting_banner("MEERKAT-POL --start")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
+        time.sleep(2)
+        print()
+        print_status()
     if "--cancel" in ctx.args or "--kill" in ctx.args:
         print_starting_banner("MEERKAT-POL --cancel")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)

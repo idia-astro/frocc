@@ -17,12 +17,16 @@ def print_header():
 
 
 def check_is_still_running(conf):
-    statusList = get_statusList(conf, noisy=False)
-    #runningJobList = [s for s in statusList if ("lkjflkj" or "COM") in s]
-    runningJobList = [s for s in statusList if re.search(r"PENDING|RUNNING", s) ]
-    if runningJobList:
-        return True
-    else:
+    # Try except, for the case this is running on a node and can't find `saccl`
+    try:
+        statusList = get_statusList(conf, noisy=False)
+        #runningJobList = [s for s in statusList if ("lkjflkj" or "COM") in s]
+        runningJobList = [s for s in statusList if re.search(r"PENDING|RUNNING", s) ]
+        if runningJobList:
+            return True
+        else:
+            return False
+    except:
         return False
 
 def get_missingVisList(conf):
