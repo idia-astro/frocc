@@ -1,8 +1,9 @@
+{% raw %}
 ---
 # http://pandoc.org/
 title: "Report `meerkat-pol`"
 author: IDIA pipeline
-date: \today\space-- 23:10:21 
+date: \today\space{% endraw %}-- {{timestamp}} {% raw %}
 geometry: "left=2.5cm,right=2.5cm,top=2cm,bottom=2cm"
 output: pdf_document
 lang: en
@@ -25,7 +26,7 @@ header-includes:
     - \captionsetup[wrapfigure]{name=Fig.}
     - \captionsetup[figure]{name=Fig.}
     - \captionsetup{skip=2pt,labelsep=bar,font={small,sf},labelfont={small,sf,bf},justification=justified}
-    - \renewcommand{\texttt}[1]{{\ttfamily\color{teal}#1}}
+    - \renewcommand{\texttt}[1]{ {\ttfamily\color{teal}#1} }
     - \usepackage{hyperref}
     - \usepackage{datetime}
     - \usepackage{xkeyval}
@@ -36,13 +37,13 @@ header-includes:
     - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},numbers=left}
     - \usepackage{lastpage}
     - \usepackage{fancyhdr}
-    - \fancyhead[L]{\texttt{merkat-pol}\text{:} testing-XMMLSS13 }
+{% endraw %}    - \fancyhead[L]{\texttt{merkat-pol}\text{:} {{ conf.input.basename }} }{% raw %}
     - \fancyhead[R]{}
     - \fancyfoot[L]{\today\space -- \thistime}
     - \fancyfoot[C]{}
-    - \fancyfoot[R]{{\textbf\thepage}\space | \pageref{LastPage}}
+    - \fancyfoot[R]{ {\textbf\thepage}\space | \pageref{LastPage} }
     - \pagestyle{fancy}
-    - \fancypagestyle{plain}{\pagestyle{fancy}\fancyfoot[L]{}}
+    - \fancypagestyle{plain}{\pagestyle{fancy}\fancyfoot[L]{} }
     - \renewcommand{\familydefault}{\sfdefault}
     - \sffamily
 ---

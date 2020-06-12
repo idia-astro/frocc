@@ -54,7 +54,7 @@ def send_email_via_api(conf, failed=False):
     else:
         subject = f"[ meerkat-pol ] New cube {conf.input.basename}"
         oneLineStatus = "the cube creation finished successfully."
-    status = get_meerkatpol_check_output()
+    status = get_meerkatpol_check_output(conf)
     body = f'Hi {username},\n\n{oneLineStatus}\n\n```\n{status}\n```\n\nLieben Gruß,\nLennart\'s IDIA API'
 
     info(f"Sending report to {conf.input.email}")
@@ -122,15 +122,18 @@ def generate_preview_jpg(conf, mode=None):
     info(f"Saving: {savePath}")
     fList[-1].save(savePath, adjust_bbox='tight')
 
-def get_meerkatpol_check_output():
+def get_meerkatpol_check_output(conf):
     result = StringIO()
     sys.stdout = result
+    print(SEPERATOR)
+    print(f"Working directory: {conf.data.workingDirectory}")
+    print(f"Slurm jobIDs: {', '.join(list(map(str,conf.data.slurmIDList)))}")
     print_output()
     return result.getvalue()
 
 def write_jinja_reportTemplate(conf):
     #old_stdout = sys.stdout
-    status = get_meerkatpol_check_output()
+    status = get_meerkatpol_check_output(conf)
     listobsOutputList = [ read_file_as_string(s) for s in write_listobs_for_inputMS_and_get_filenames(conf) ]
     timestamp = get_timestamp("%H:%M:%S")
     chanStatsDict = get_cube_channel_statsDict(conf)
