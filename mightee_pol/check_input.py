@@ -95,8 +95,8 @@ README='''
  ------------------------------------------------------------------------------
  
  When calling `meerkat-pol --createScripts` `default_config.txt` and
- `.default_config.template` are read and the python and slurm files are copied
- to the current directory. The script also tries to calculate the optimal
+ `.default_config.template` are read and the slurm files are created
+ in the current directory. The script also tries to calculate the optimal
  number of slurm taks depending on the input ms spw coverage.
  
  The last step `meerkat-pol --start` submits the slurm files in a dependency

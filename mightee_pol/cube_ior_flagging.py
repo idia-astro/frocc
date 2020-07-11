@@ -82,7 +82,7 @@ def get_yDataFit(xData, a, b, c, d):
 
 def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     xData = statsDict['chanNo']
-    x2Data = np.array(statsDict['frequency']) /100  # conver to GHz
+    x2Data = np.array(statsDict['frequency']) /1000  # conver to GHz
     yData = statsDict['rmsStokesV']
     fig, ax1 = plt.subplots(figsize=(16,8))
     ax1.set_title(r'Iterative outlier rejection, iteration ' + str(iteration))

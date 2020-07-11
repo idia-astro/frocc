@@ -42,7 +42,7 @@ PATH_HOME = expanduser("~") + "/"
 
 PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/opt/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/opt/slurm/bin:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/bin:/idia/software/pipelines/jordan-dev/processMeerKAT/:{PATH_HOME}.fzf/bin:/users/lennart/software"
 
-PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/:/idia/users/lennart/from-data-scratchtmp/lennart/devel/mightee_pol/"
+PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/"
 
 os.environ['PATH'] = ":".join([os.environ.get('PATH'), PATH_QUICKFIX])
 os.environ['PYTHONPATH'] = ":".join([os.environ.get('PYTHONPATH'), PYTHONPATH_QUICKFIX])
@@ -81,7 +81,7 @@ def main(ctx):
         print_starting_banner("MEERKAT-POL --createScripts")
         commandList = PREFIX_SRUN.split(" ") + conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args
         logger.info(f"Command: {' '.join(commandList)}")
-        subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": PATH_QUICKFIX, "PATH": PATH_QUICKFIX, "PYTHONPATH": PYTHONPATH_QUICKFIX})
+        subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": os.environ["PATH"], "PATH": os.environ["PATH"], "PYTHONPATH": os.environ["PYTHONPATH"]})
         ctx.args.remove("--createScripts")
     if "--start" in ctx.args:
         print_starting_banner("MEERKAT-POL --start")

@@ -31,9 +31,11 @@ import numpy as np
 # SETTINGS
 
 
-FILEPATH_CONFIG_USER = "default_config.txt"
+# make is obsulete since this moved into config.input.configFile
+FILEPATH_CONFIG_USER = "meerkat-pol_default_config.txt"
+
 PATH_PACKAGE = os.path.dirname(mightee_pol.__file__)  # helper
-FILEPATH_CONFIG_TEMPLATE = ".default_config.template"
+FILEPATH_CONFIG_TEMPLATE = ".meerkat-pol_default_config.template"
 FILEPATH_CONFIG_TEMPLATE_ORIGINAL = os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE)
 
 # TODO: handle this better. Maybe a config.py? Right now this is a checken-egg-problem, therefore hardcoded
@@ -331,6 +333,7 @@ def write_all_sbatch_files(conf):
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 1,
             'mem': "30GB",
+            'time': "00:10:00",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -428,6 +431,8 @@ def main(ctx):
         info(f"Scripts arguments: {conf}")
         write_user_config_input(conf)
         # copy config template into local directory
+#        TODO: make the user chose the file. if conf.input.configFile:
+#            shutil.copy2(os.path.join(FILEPATH_CONFIG_USER, conf.input.configFile)
         try:
             shutil.copy2(os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE_ORIGINAL), FILEPATH_CONFIG_TEMPLATE)
         except shutil.SameFileError:

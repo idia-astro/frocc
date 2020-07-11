@@ -257,7 +257,7 @@ def generate_plot_runtimes(conf):
     dataDict = get_times_listDict(conf)
 
     fig, ax1 = plt.subplots(figsize=(8,10))
-    ax1.set_title(f'Runtime merkat-pol: On single node {runtimeDict["totalAuto"]}, human {runtimeDict["humanAuto"]}')
+    ax1.set_title(f'Runtime merkat-pol: On single node {runtimeDict["totalAuto"]}, {runtimeDict["humanAuto"]} wall time')
     ax1.set_xlabel(r'Runtime [hours]')#,fontsize=22)
     ax1.set_ylabel(r'Slurm job count')#,fontsize=22)
     ax1.grid(b=True, which='major', linestyle='dashed')

@@ -182,10 +182,10 @@ def fill_cube_with_images(conf, mode="normal"):
             #info(f"Q: Progress {Q}")
             U = dataCubeInput[2, ii, :, :]
             V = dataCubeInput[3, ii, :, :]
-            P_I += w * np.sqrt(I**2)
+            P_I += w * I
             P_QU += w * np.sqrt(Q**2 + U**2)
             #info(f"P_QU: Progress {P_QU}")
-            P_V += w * np.sqrt(V**2)
+            P_V += w * V
             weightedFreqs += w * np.sqrt(statsDict["frequency"][ii]**2)
     weightsSum = np.nansum(statsDict["weight"])
     dataCubeOutput[0, 0, :, :] = P_I / weightsSum

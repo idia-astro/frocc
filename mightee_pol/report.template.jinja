@@ -120,7 +120,7 @@ It shows observation details for input measurement sets.
 
 Runtime
 =======
-The `meerkat-pol` cube pipeline ran in {{ runtimeDict['humanAuto'] }} in human time. The accumulated time on
+The `meerkat-pol` cube pipeline ran in {{ runtimeDict['humanAuto'] }} in wall time. The accumulated time on
 all computer nodes is {{ runtimeDict['totalAuto'] }}. The following script are executed in sequential order:
 `{{ conf.input.runScripts | join('`, `') }}`. Multiple instances of the same script
 may be spawned in parallel.

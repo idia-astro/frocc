@@ -14,7 +14,6 @@ import inspect
 import subprocess
 import sys
 from astropy.io import fits
-from astropy.io import fits
 #from mightee_pol.logger import info, debug, error, warning
 
 #import logging
