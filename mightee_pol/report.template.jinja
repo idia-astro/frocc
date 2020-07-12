@@ -4,7 +4,7 @@
 title: "Report `meerkat-pol`"
 author: IDIA pipeline
 date: \today\space{% endraw %}-- {{timestamp}} {% raw %}
-geometry: "left=2.5cm,right=2.5cm,top=2cm,bottom=2cm"
+geometry: "left=2.3cm,right=2.3cm,top=1.8cm,bottom=1.8cm"
 output: pdf_document
 lang: en
 toc: true
@@ -87,8 +87,8 @@ which of the output files were created successfully and which failed.
 {{ status }}
 ~~~~
 
-RMS Noise via Stokes V and flagging
-===================================
+RMS Noise via Stokes V, Stokes I maximum and flagging
+=====================================================
 The plot below shows the RMS noise, estimated via the absolute median deviation,
 derived from Stokes V. Very noisy channels are flagged by an iterative outlier
 rejection.
@@ -98,6 +98,9 @@ measured via the median Absolute deviation. The initial data is fitted with a
 third order polynomial. All data below and above $8 \sigma$ is flagged. This
 repeats until no new data gets rejected. This plot of the final iteration is
 shown here.]({{ iorPlotFilePath }} )
+
+![**Stokes I max over frequency:** Stokes I at the position of the brightest pixel in the
+first valid channel.]({{ joinpath(conf.env.dirReport, conf.input.basename + conf.env.extCubeMaxStokesIPlotPdf) }} )
 
 Input parameter
 ===============

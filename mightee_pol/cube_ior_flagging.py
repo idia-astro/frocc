@@ -84,10 +84,10 @@ def plot_all(statsDict, yDataFit, std, outlierIndexSet, iteration, conf):
     xData = statsDict['chanNo']
     x2Data = np.array(statsDict['frequency']) /1000  # conver to GHz
     yData = statsDict['rmsStokesV']
-    fig, ax1 = plt.subplots(figsize=(16,8))
+    fig, ax1 = plt.subplots(figsize=(16,7.5))
     ax1.set_title(r'Iterative outlier rejection, iteration ' + str(iteration))
     ax1.set_xlabel(r'channel',fontsize=22)
-    ax1.set_ylabel(r'RMS [µJy beam$^{-1}$]',fontsize=22)
+    ax1.set_ylabel(r'RMS [\,µJy beam$^{-1}$\,]',fontsize=22)
     ax1.grid(b=True, which='major', linestyle='dashed')
     ax1.grid(b=True, which='minor', linestyle='dotted')
     ax1.minorticks_on()

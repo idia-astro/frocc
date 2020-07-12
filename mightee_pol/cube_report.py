@@ -26,6 +26,7 @@ from datetime import datetime
 from io import StringIO
 from jinja2 import Template
 from glob import glob
+#import seaborn as sns
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -39,6 +40,7 @@ from mightee_pol.check_output import print_output
 from mightee_pol.config import FORMAT_LOGS_TIMESTAMP, FILEPATH_JINJA_TEMPLATE, FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
 
+#sns.set_style("ticks")
 os.environ['LC_ALL'] = "C.UTF-8"
 os.environ['LANG'] = "C.UTF-8"
 
@@ -205,8 +207,6 @@ def get_times_listDict(conf):
     dataDict['timeStart'] = []
     dataDict['timeStop'] = []
     dataDict['timeDelta'] = []
-    info("!!!!!!!!!!!!")
-    info(conf)
     logFilepathList = glob(os.path.join(conf.env.dirLogs, "*.err"))
     relevantLogFilepathList = []
     for slurmID in conf.data.slurmIDList:
@@ -251,6 +251,46 @@ def get_total_runtime_formated(conf):
     return runtimeDict
 
 
+def generate_max_stokesI_plot(conf):
+    tabfile = conf.input.basename + conf.env.extCubeIORStatistics
+    statsDict = get_dict_from_tabFile(tabfile)
+    xData = statsDict['chanNo']
+    x2Data = np.array(statsDict['frequency']) /1000  # convert to GHz
+    yData = np.array(statsDict['maxStokesI']) / 1e6  # convert to Jy
+    fig, ax1 = plt.subplots(figsize=(16,7.5))
+    ax1.set_title(r'Stokes I at position of brightest pixel in first valid channel', fontsize=26)
+    ax1.set_xlabel(r'channel',fontsize=22)
+    ax1.set_ylabel(r'Stokes I max [Jy beam$^{-1}$]',fontsize=22)
+    ax1.grid(b=True, which='major', linestyle='dashed')
+    ax1.grid(b=True, which='minor', linestyle='dotted')
+    ax1.minorticks_on()
+    ax1.tick_params(labelsize=22)
+    ax1.labelsize = 22
+
+    ax1.plot(xData, yData, linestyle='None', marker='.', color='green', label="Unflagged")
+    # only for the label/legend to show the right color
+    outlierIndexSet = []
+    for jj, flag in enumerate(statsDict['flagged']):
+        if flag and yData[jj] != "nan":
+            outlierIndexSet.append(jj)
+    if outlierIndexSet:
+        ax1.plot(xData[list(outlierIndexSet)[0]], yData[list(outlierIndexSet)[0]], linestyle='None', marker='.', color='red', label="Flagged (ior)")
+    for i in outlierIndexSet:
+        ax1.plot(xData[i], yData[i], linestyle='None', marker='.', color='red')
+
+
+    ax1.legend(frameon=True, fancybox=True)
+    # second x-axis on top, which needs to share (twiny) the y-axis
+    # TODO: ask Krishna: second x-axis to top
+    ax2 = ax1.twiny()
+    ax2.set_xlabel(r'frequency [GHz]',fontsize=22)
+    ax2.tick_params(axis="x")
+    ax2.tick_params(labelsize=22)
+    ax2.plot(x2Data, yData, linestyle='None', marker='None', color='None')
+
+    #PDF
+    outFile = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extCubeMaxStokesIPlotPdf)
+    fig.savefig(outFile, bbox_inches = 'tight')
 
 
 
@@ -312,7 +352,9 @@ def get_cube_channel_statsDict(conf):
 def report_all(conf):
 #    try:
     if True:
+        generate_max_stokesI_plot(conf)
         generate_plot_runtimes(conf)
+        generate_max_stokesI_plot(conf)
         generate_preview_jpg(conf)
         if conf.input.smoothbeam:
             generate_preview_jpg(conf, mode="smoothed")
