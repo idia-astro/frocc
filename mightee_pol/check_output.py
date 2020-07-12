@@ -5,7 +5,7 @@ import os
 import re
 
 from mightee_pol.lhelpers import get_config_in_dot_notation, get_basename_from_path, get_statusList, SEPERATOR, SEPERATOR_HEAVY
-from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
 
 def print_header():

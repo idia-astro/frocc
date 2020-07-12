@@ -34,7 +34,7 @@ import numpy as np
 from astropy.io import fits
 
 from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header
-#from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
 
 
@@ -216,7 +216,7 @@ def fill_cube_with_images(conf, mode="normal"):
 @main_timer
 def main():
     #args = DotMap(get_dict_from_click_args(ctx.args))
-    conf = get_config_in_dot_notation(templateFilename=".default_config.template", configFilename="default_config.txt")
+    conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     if conf.input.smoothbeam:
         info(f"Scripts config: {conf}")
         make_empty_image(conf, mode="normal")

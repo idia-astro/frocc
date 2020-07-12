@@ -18,6 +18,7 @@ from astropy.io import fits
 
 #import logging
 #from logging import info, debug, error, warning
+from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
 
 #logging.basicConfig(
@@ -89,7 +90,7 @@ def get_dict_from_click_args(argsList):
     return argsDict
 
 
-def get_config_in_dot_notation(templateFilename=".default_config.template", configFilename="default_config.txt"):
+def get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER):
     '''
     '''
     config = configparser.ConfigParser(allow_no_value=True, strict=False, interpolation=configparser.ExtendedInterpolation())
@@ -241,7 +242,7 @@ def get_optimal_taskNo_cpu_mem(conf):
     '''
     Tries to return an optimal resource profile (mainly for t-clean) derived
     from the image size. At the moment only a naive implementation is done.
-    Scaling linear: 500px to 7500px. Have a look into .default_config.template
+    Scaling linear: 500px to 7500px. Have a look into .meerkat-pol_default_config.template
     '''
     def linear_fit(m, x, b):
         return m * x + b
@@ -314,10 +315,12 @@ def update_CRPIX3(filepathCube):
     '''
     Updates the frequency reference channel in the fits header, CRPIX3.
     '''
-    chanNo = get_lowest_channelNo_with_data_in_cube(filepathCube)
-    headerDict = {"CRPIX3": chanNo}
-    info(f"Updating CRPIX3 value in fits header: {filepathCube}, {headerDict}")
-    update_fits_header_of_cube(filepathCube, headerDict)
+    pass
+# This may be not necessay, TODO: check this
+#    chanNo = get_lowest_channelNo_with_data_in_cube(filepathCube)
+#    headerDict = {"CRPIX3": chanNo}
+#    info(f"Updating CRPIX3 value in fits header: {filepathCube}, {headerDict}")
+#    update_fits_header_of_cube(filepathCube, headerDict)
 
 def print_starting_banner(headline):
     maxLength = len(SEPERATOR_HEAVY)

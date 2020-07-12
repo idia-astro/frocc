@@ -16,7 +16,7 @@ import os
 
 from scipy import *
 from mightee_pol.lhelpers import get_std_via_mad, get_config_in_dot_notation, main_timer, get_firstFreq
-from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from logging import info, error
 import subprocess
 

@@ -1,7 +1,7 @@
 # This is the configuration file to initialise the mightee_pol cube generation.
 # Please change the parameters accordingly.
 
-# Default values are read from the template file .default_config.template.
+# Default values are read from the template file .meerkat-pol_default_config.template.
 # Parameters from the template file can be used in this file you are editing here
 # to overwrite the defaults.
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

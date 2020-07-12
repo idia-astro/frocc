@@ -24,16 +24,15 @@ import click
 import subprocess
 from os.path import expanduser
 from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
-from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
 from mightee_pol.check_input import check_all, print_usage, print_help, print_readme
 from mightee_pol.check_status import print_status
-from mightee_pol.config import SPECIAL_FLAGS
+from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
 from mightee_pol.logger import *
 
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun -N 1 --preserve-env --mem 30G --ntasks-per-node 1 --cpus-per-task 4 --time 10:00:00 --pty"
+PREFIX_SRUN = "srun -N 1 --preserve-env --mem 30G --ntasks-per-node 1 --cpus-per-task 4 --time 01:00:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 COMMAND = "setup_buildcube"
@@ -61,6 +60,7 @@ def main(ctx):
     '''
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE_ORIGINAL, configFilename="")
     check_all(ctx.args)
+
     if "--usage" in ctx.args or len(set(SPECIAL_FLAGS).intersection(set(ctx.args))) == 0:
         print_usage()
         return None
@@ -73,6 +73,12 @@ def main(ctx):
     if "--readme" in ctx.args:
         print_readme()
         return None
+    if "--workingDirectory" in ctx.args:
+        # TODO: this is a little ugly. Think up something that blends in cleaner
+        workingDir = ctx.args[ctx.args.index("--workingDirectory")+1]
+        if not os.path.exists(workingDir):
+            os.makedirs(workingDir)
+        os.chdir(workingDir)
     if "--createConfig" in ctx.args:
         print_starting_banner("MEERKAT-POL --createConfig")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
@@ -86,7 +92,7 @@ def main(ctx):
     if "--start" in ctx.args:
         print_starting_banner("MEERKAT-POL --start")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
-        time.sleep(2)
+        time.sleep(5)
         print()
         print_status()
     if "--cancel" in ctx.args or "--kill" in ctx.args:

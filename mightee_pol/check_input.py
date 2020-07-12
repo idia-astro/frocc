@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from mightee_pol.setup_buildcube import FILEPATH_CONFIG_TEMPLATE_ORIGINAL
 from mightee_pol.lhelpers import DotMap, get_dict_from_click_args
-from mightee_pol.config import SPECIAL_FLAGS
+from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL
 import sys
 import os
 '''
@@ -78,15 +77,16 @@ README='''
  
  1. Command line argument: `meerkat-pol --inputMS "myData.ms"`
  After calling `meerkat-pol` with `--createConfig` all settings are written to
- `default_config.txt`. (All valid flags can be found in
- `.default_config.template` under the `[input]` section).
+ `meerkat-pol_default_config.txt`. (All valid flags can be found in
+ `.meerkat-pol_default_config.template` under the `[input]` section).
  
- 2. Standard configuration file: `default_config.txt`
- After creating `default_config.txt` via `meerkat-pol ... ... --createConfig`
- it can be revised. All parameters in here overwrite the ones in
- `.default_config.template`. Do not change anything under the section `[data]`.
+ 2. Standard configuration file: `meerkat-pol_default_config.txt`
+ After creating `meerkat-pol_default_config.txt` via `meerkat-pol ... ...
+ --createConfig`  it can be revised. All parameters in here overwrite the ones
+ in `.meerkat-pol_default_config.template`. Do not change anything under the
+ section `[data]`.
  
- 3. Fallback configuration file: `.default_config.template
+ 3. Fallback configuration file: `.meerkat-pol_default_config.template
  The pipeline falls back to the values in this file if they have not been
  specified via one of the previous way. It is also a place where one can lookup
  explanations for valid flags for `meerkat-pol`. It also includes the section
@@ -94,8 +94,8 @@ README='''
  
  ------------------------------------------------------------------------------
  
- When calling `meerkat-pol --createScripts` `default_config.txt` and
- `.default_config.template` are read and the slurm files are created
+ When calling `meerkat-pol --createScripts` `meerkat-pol_default_config.txt` and
+ `.meerkat-pol_default_config.template` are read and the slurm files are created
  in the current directory. The script also tries to calculate the optimal
  number of slurm taks depending on the input ms spw coverage.
  
