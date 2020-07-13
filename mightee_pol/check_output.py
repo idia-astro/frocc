@@ -47,9 +47,9 @@ def get_missingVisList(conf):
 def check_split_output(conf):
     missingVisList = get_missingVisList(conf)
     if missingVisList:
-        print("Split seems to have failed for the following output visibilities:")
+        print("[\u2718] Split seems to have failed for the following output visibilities:")
         for missingVis in missingVisList:
-            print(f" {missingVis}")
+            print(f" \u2718   {missingVis}")
     else:
         print("[\u2714] Checking `split` output: All visibilities are complete.")
 

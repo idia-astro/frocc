@@ -303,12 +303,33 @@ def get_lowest_channelNo_with_data_in_cube(filepathCube):
     with fits.open(filepathCube, memmap=True, mode="update") as hud:
         dataCube = hud[0].data
         maxIdx = hud[0].data.shape[1]
-        for ii in range(0, maxIdx + 1):
+        for ii in range(0, maxIdx):
             if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
                 continue
             else:
                 chanNo = ii + 1
                 return chanNo
+
+def get_lowest_channelIdx_and_freq_with_data_in_cube(filepathCube, freqPower=1e-9):
+    '''
+    '''
+    info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
+    dataDict = {}
+#        title = f"Preview: Cube with Stokes IQUV for channel {header['CRPIX3']} at {round(float(header['CRVAL3'])*1e-9,2)} GHz"
+    with fits.open(filepathCube, memmap=True, mode="update") as hud:
+        dataCube = hud[0].data
+        headerCube = hud[0].header
+        maxIdx = hud[0].data.shape[1]
+        for ii in range(0, maxIdx):
+            if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
+                continue
+            else:
+                chanIdx = ii
+                break
+    refChanIdx = int(headerCube['CRPIX3']) -1
+    freq = float(headerCube['CRVAL3']) + float(headerCube['CDELT3']) * (-refChanIdx + chanIdx)
+    freq = freq * freqPower
+    return {'chanIdx': chanIdx, 'freq': freq}
 
 
 def update_CRPIX3(filepathCube):

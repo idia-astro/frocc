@@ -35,7 +35,7 @@ from astropy.io import fits
 import aplpy
 
 
-from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header, read_file_as_string, write_file_from_string, get_timestamp, run_command_with_logging, get_dict_from_tabFile
+from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header, read_file_as_string, write_file_from_string, get_timestamp, run_command_with_logging, get_dict_from_tabFile, get_lowest_channelIdx_and_freq_with_data_in_cube
 from mightee_pol.check_output import print_output
 from mightee_pol.config import FORMAT_LOGS_TIMESTAMP, FILEPATH_JINJA_TEMPLATE, FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
@@ -91,7 +91,9 @@ def generate_preview_jpg(conf, mode=None):
         filepath = conf.input.basename + conf.env.extCubeFits
         savePath = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extCubePreviewJpg)
         data, header = fits.getdata(filepath, header=True)
-        title = f"Preview: Cube with Stokes IQUV for channel {header['CRPIX3']} at {round(float(header['CRVAL3'])*1e-9,2)} GHz"
+        chanIdxFreqDict = get_lowest_channelIdx_and_freq_with_data_in_cube(filepath)
+        title = f"Preview: Cube with Stokes IQUV for channel index {chanIdxFreqDict['chanIdx']} at {round(float(chanIdxFreqDict['freq']),2)} GHz"
+#        title = f"Preview: Cube with Stokes IQUV for channel {header['CRPIX3']} at {round(float(header['CRVAL3'])*1e-9,2)} GHz"
 
 
     #refChanIdx = int(header['CRPIX3']) - 1
