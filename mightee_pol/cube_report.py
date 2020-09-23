@@ -64,8 +64,8 @@ def send_email_via_api(conf, failed=False):
         if failed:
             files = []
         else:
-            filePath1 = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportPdf)
-            filePath2 = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportMD)
+            filePath1 = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extReportPdf)
+            filePath2 = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extReportMD)
             files = [("files", open(filePath1, 'rb')), ("files", open(filePath2, 'rb'))]
         request = requests.post(conf.env.apiUrl, data={"subject": subject, "body":body, "email": email, "transferID": transferID, "apiKey": apiKey}, files=files)
         if str(request).find("[200]") > 0:
@@ -161,14 +161,14 @@ def write_jinja_reportTemplate(conf):
 
 def create_pdf_from_template(conf):
     fileReportPdfTemplate = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportTemplate)
-    fileReportPdf = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportPdf)
+    fileReportPdf = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extReportPdf)
     info(f"Generating report pdf...")
     command = f"{conf.env.commandPandoc} {fileReportPdf} {fileReportPdfTemplate}"
     run_command_with_logging(command)
 
 def create_md_from_template(conf):
     filePathReportPdfTemplate = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportTemplate)
-    filePathReportMD = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportMD)
+    filePathReportMD = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extReportMD)
     info(f"Writing report markdown: {filePathReportMD}")
     templateString = read_file_as_string(filePathReportPdfTemplate)
     #rmove header
@@ -301,7 +301,7 @@ def generate_plot_runtimes(conf):
     dataDict = get_times_listDict(conf)
 
     fig, ax1 = plt.subplots(figsize=(8,10))
-    ax1.set_title(f'Runtime merkat-pol: On single node {runtimeDict["totalAuto"]}, {runtimeDict["humanAuto"]} wall time')
+    ax1.set_title(f'Runtime meerkat-pol: On single node {runtimeDict["totalAuto"]}, {runtimeDict["humanAuto"]} wall time')
     ax1.set_xlabel(r'Runtime [hours]')#,fontsize=22)
     ax1.set_ylabel(r'Slurm job count')#,fontsize=22)
     ax1.grid(b=True, which='major', linestyle='dashed')

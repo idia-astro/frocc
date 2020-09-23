@@ -24,15 +24,16 @@ import click
 import subprocess
 from os.path import expanduser
 from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
-from mightee_pol.check_input import check_all, print_usage, print_help, print_readme
+from mightee_pol.check_input import check_all, print_usage, print_help, print_help_verbose, print_readme
 from mightee_pol.check_status import print_status
-from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE
+from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_CONFIG_USER, FILEPATH_CONFIG_TEMPLATE
 from mightee_pol.logger import *
+from mightee_pol.setup_buildcube import write_all_sbatch_files
 
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun -N 1 --preserve-env --mem 30G --ntasks-per-node 1 --cpus-per-task 4 --time 01:00:00 --pty"
+PREFIX_SRUN = "srun -N 1 --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 2 --time 00:30:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 COMMAND = "setup_buildcube"
@@ -67,6 +68,9 @@ def main(ctx):
     if "--help" in ctx.args or "-h" in ctx.args:
         print_help()
         return None
+    if "--help-verbose" in ctx.args:
+        print_help_verbose()
+        return None
     if "--status" in ctx.args or "-s" in ctx.args:
         print_status()
         return None
@@ -85,9 +89,21 @@ def main(ctx):
         ctx.args.remove("--createConfig")
     if "--createScripts" in ctx.args:
         print_starting_banner("MEERKAT-POL --createScripts")
-        commandList = PREFIX_SRUN.split(" ") + conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args
-        logger.info(f"Command: {' '.join(commandList)}")
-        subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": os.environ["PATH"], "PATH": os.environ["PATH"], "PYTHONPATH": os.environ["PYTHONPATH"]})
+        # if [data] scrtion doesnent exists start the container, else give warning and write scripts
+        conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+        if not conf.data:
+            commandList = PREFIX_SRUN.split(" ") + conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args
+            logger.info(f"Command: {' '.join(commandList)}")
+            subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": os.environ["PATH"], "PATH": os.environ["PATH"], "PYTHONPATH": os.environ["PYTHONPATH"]})
+        else:
+            warning(f"Found [data] section in {FILEPATH_CONFIG_USER}. Using those values! To re-calculate them delete the [data] section and re-run `--createScripts`.")
+
+        conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+        #if conf.input.copyRunscripts:
+        if "--copyScripts" in ctx.args:
+            copy_runscripts(conf)
+
+        write_all_sbatch_files(conf)
         ctx.args.remove("--createScripts")
     if "--start" in ctx.args:
         print_starting_banner("MEERKAT-POL --start")

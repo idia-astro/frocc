@@ -34,6 +34,7 @@ os.environ['LC_ALL'] = "C.UTF-8"
 os.environ['LANG'] = "C.UTF-8"
 
 
+
 class DotMap(dict):
     """
     Own implementation to convert a python dict into dot notation.

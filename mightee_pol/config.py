@@ -19,6 +19,7 @@ FILEPATH_LOG_TIMER = "timer.log"
 
 SPECIAL_FLAGS = [
         "--help",
+        "--help-verbose",
         "-h",
         "--start",
         "--usage",

@@ -13,7 +13,7 @@ import configparser
 from mightee_pol.logger import *
 
 # own helpers
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
+from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR, run_command_with_logging
 from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_USER, PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_LOG_TIMER
 import mightee_pol
 
@@ -208,11 +208,6 @@ def write_all_sbatch_files(conf):
     '''
     # split
     slurmArrayLength = str(sum([len(x) for x in conf.data.predictedOutputChannels]))
-    # limit the split jobs to run in parallel, since they seem to cause I/O trouble.
-    if 99 < int(slurmArrayLength):
-        slurmArrayMaxTaks = 99
-    else:
-        slurmArrayMaxTaks = slurmArrayLength
     numberInputMS = len(conf.input.inputMS)
     slurmMemory = 20
     if slurmMemory > int(conf.env.tcleanMaxMemory):
@@ -220,12 +215,13 @@ def write_all_sbatch_files(conf):
     basename = "cube_split"
     filename = basename + ".sbatch"
     sbatchDict = {
-        'array': f"1-{slurmArrayLength}%{slurmArrayMaxTaks}",
+        'array': f"1-{slurmArrayLength}%{slurmArrayLength}",
         'job-name': basename,
         'cpus-per-task': 1,
         'mem': str(slurmMemory) + "GB",
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
+        'time': "02:00:00",
         }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -237,17 +233,16 @@ def write_all_sbatch_files(conf):
     # tclean
     slurmArrayLength = str(len(set(itertools.chain(*conf.data.predictedOutputChannels))))
     tcleanSlurm = get_optimal_taskNo_cpu_mem(conf)
-    if int(tcleanSlurm['maxTasks']) > int(slurmArrayLength):
-        tcleanSlurm['maxTasks'] = slurmArrayLength
     basename = "cube_tclean"
     filename = basename + ".sbatch"
     sbatchDict = {
-        'array': f"1-{slurmArrayLength}%{tcleanSlurm['maxTasks']}",
+        'array': f"1-{slurmArrayLength}%{slurmArrayLength}",
         'job-name': basename,
         'cpus-per-task': tcleanSlurm['cpu'],
         'mem': str(tcleanSlurm['mem']) + "GB",
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
+        'time': "20:00:00",
         }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -270,6 +265,7 @@ def write_all_sbatch_files(conf):
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 2,
             'mem': "50GB",
+            'time': "02:00:00",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -281,13 +277,15 @@ def write_all_sbatch_files(conf):
     # ior flagging
     basename = "cube_ior_flagging"
     filename = basename + ".sbatch"
+    # TODO: calculate memory requirements better. Less magic numbers, put in config.
     sbatchDict = {
             'array': "1-1%1",
             'job-name': basename,
             'output': "logs/" + basename + "-%A-%a.out",
             'error': "logs/" + basename + "-%A-%a.err",
-            'cpus-per-task': 8,
-            'mem': str(tcleanSlurm['mem']) + "GB",
+            'cpus-per-task': conf.env.hdf5ConverterMaxCpuCores,
+            'mem': "230GB",
+            'time': "06:00:00",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -306,6 +304,7 @@ def write_all_sbatch_files(conf):
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 1,
             'mem': "100GB",
+            'time': "00:30:00",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -324,7 +323,7 @@ def write_all_sbatch_files(conf):
             'error': "logs/" + basename + "-%A-%a.err",
             'cpus-per-task': 1,
             'mem': "30GB",
-            'time': "00:10:00",
+            'time': "00:30:00",
             }
     if os.path.exists(basename + ".py"):
         scriptPath =  basename + ".py"
@@ -436,7 +435,7 @@ def main(ctx):
         data = {}
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
-        # iterate ofer multibple ms. This is necessary to feed tclean with multiple ms at once.
+        # iterate ofer multible ms. This is necessary to feed tclean with multiple ms at once.
         data['workingDirectory'] = os.getcwd()
         data['predictedOutputChannels'] = []
         data['fields'] = []
@@ -451,10 +450,10 @@ def main(ctx):
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
 
         #if conf.input.copyRunscripts:
-        if "--copyScripts" in ctx.args:
-            copy_runscripts(conf)
+        #if "--copyScripts" in ctx.args:
+        #    copy_runscripts(conf)
 
-        write_all_sbatch_files(conf)
+        #write_all_sbatch_files(conf)
 
         return None  # ugly but maybe best solution, because of wrapper
 
@@ -476,18 +475,15 @@ def main(ctx):
         slurmIDList = [ int(num) for num in sbatchResultStd.split() if num.isdigit() ]
         update_user_config_data({'slurmIDList': slurmIDList})
         if sbatchResult.stderr:
-            error(sbatchResult.stderr)
+            sbatchResultStderrList = sbatchResult.stderr.split("\n")
+            for sbatchResultStderr in sbatchResultStderrList:
+                error(sbatchResultStderr)
         return None
 
     if "--cancel" in ctx.args or "--kill" in ctx.args:
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
         command = f'scancel {" ".join(map(str,conf.data.slurmIDList))}'
-        info(f"Slurm command: {command}")
-        sbatchResult = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, shell=True)
-        sbatchResultStd = sbatchResult.stdout.replace("\n", " ")
-        info(sbatchResultStd)
-        if sbatchResult.stderr:
-            error(sbatchResult.stderr)
+        run_command_with_logging(command)
         return None
 
 

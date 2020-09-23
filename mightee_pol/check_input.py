@@ -28,16 +28,17 @@ USAGE='''
 
  4. Show the status
  ------------------
- merkat-pol --status
+ meerkat-pol --status
 
  5. Canel slurm jobs
  -------------------
- merkat-pol --cancel
+ meerkat-pol --cancel
 
  6. Further help
  ---------------
- merkat-pol --readme
- merkat-pol --help
+ meerkat-pol --readme
+ meerkat-pol --help
+ meerkat-pol --help-verbose
 '''
 
 README='''
@@ -59,7 +60,7 @@ README='''
  2. Implementation
  -----------------
  
- `merkat-pol` takes input measurement set (ms) data and parameters to create
+ `meerkat-pol` takes input measurement set (ms) data and parameters to create
  channelized data cube in Stokes IQUV.  
  First CASA `split` is run to split out visibilities from the input ms into
  visibilities of the aimed resolution in frequency. Then `tclean` runs on each
@@ -170,7 +171,7 @@ def check_if_flag_exists(flagList):
     if wrongFlags:
         print(f' ERROR: Flag not recognised: {wrongFlags}')
         print()
-        print(f' `meerkat-pol --help` to list all valid flags')
+        print(f' `meerkat-pol --help` to list all valid flags.')
         sys.exit()
 
 
@@ -184,7 +185,7 @@ def check_if_inputMS_and_createScrits_come_together(flagList):
     if bool("--inputMS" in flagList) ^ bool("--createConfig" in flagList):
         print(f' ERROR: --inputMS <inputFile> and --createConfig must be used together.')
         print()
-        print(f' `meerkat-pol --help` to list all valid flags')
+        print(f' `meerkat-pol --help` to list all valid flags.')
         sys.exit()
     
 
@@ -192,9 +193,9 @@ def check_flags(flagList, conf):
     check_if_flag_exists(flagList)
     check_if_inputMS_and_createScrits_come_together(flagList)
 
-def print_help():
+def print_help_verbose():
     configDictList = get_config_dictList()
-    print("meerkat-pol --help")
+    print("meerkat-pol --help-verbose")
     for entry in configDictList:
         # get padding depending on key length
         keyLength = 0
@@ -211,6 +212,29 @@ def print_help():
         print()
     print(" For more usage support please read the output of:")
     print("  meerkat-pol --usage")
+    print("  meerkat-pol --help")
+    print("  meerkat-pol --readme")
+
+
+def print_help():
+    configDictList = get_config_dictList()
+    print("meerkat-pol --help")
+    # get padding depending on key length
+    paddingLength = 0
+    for entry in configDictList:
+        if paddingLength < len(entry['FLAG']):
+            paddingLength = len(entry['FLAG'])
+    for entry in configDictList:
+        for key, value in entry.items():
+            # ignore FLAG
+            if key == "FLAG":
+                padding = (paddingLength - len(entry['FLAG'])) * " "
+                line = "  "+entry['FLAG'] + "  " + padding + entry['DESCRIPTION']
+                print(line)
+    print()
+    print(" For more usage support please read the output of:")
+    print("  meerkat-pol --usage")
+    print("  meerkat-pol --help-verbose")
     print("  meerkat-pol --readme")
 
 def print_usage():

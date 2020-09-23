@@ -262,9 +262,10 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     update_CRPIX3(cubeName)
 
     info(SEPERATOR)
+    os.environ['OMP_NUM_THREADS'] = str(conf.env.hdf5ConverterMaxCpuCores)
     info(f"Generating HDF5 file from: {cubeName}")
     hdf5Outputfile = os.path.join(conf.input.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
-    command = " ".join([conf.input.hdf5Converter, "-s", "-o", hdf5Outputfile, cubeName])
+    command = " ".join([conf.input.hdf5Converter, "-o", hdf5Outputfile, cubeName])
     run_command_with_logging(command)
 
 def get_only_newly_flagged_chanNoList(initialStatsDict, outlierChanNoList):

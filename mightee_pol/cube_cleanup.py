@@ -16,8 +16,8 @@ import numpy as np
 import sys
 import logging
 import datetime
+import argparse
 import os
-from glob import glob
 from logging import info, error
 
 import click
@@ -25,7 +25,7 @@ import click
 import casatasks 
 
 from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, get_firstFreq, SEPERATOR, SEPERATOR_HEAVY
+from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, get_firstFreq, get_basename_from_path, SEPERATOR, SEPERATOR_HEAVY
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # SETTINGS
@@ -66,74 +66,63 @@ def main_timer(func):
 # QUICKFIX
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def call_tclean(channelInputMS, channelNumber, conf):
+def call_split(channelNumber, conf, msIdx):
     '''
     '''
-    info(f"Starting CASA tclean for input files: {channelInputMS}")
-    info(f"Setting output filename base to: {conf.input.basename + conf.env.markerChannel + channelNumber}")
-    imagename = os.path.join(conf.env.dirImages, conf.input.basename + conf.env.markerChannel + channelNumber)
-    casatasks.tclean(
-        vis=channelInputMS,
-        imagename=imagename,
-        niter=conf.input.niter,
-        gain=conf.input.gain,
-        deconvolver=conf.input.deconvolver,
-        threshold=conf.input.threshold,
-        imsize=conf.input.imsize,
-        cell=conf.input.cell,
-        gridder=conf.input.gridder,
-        wprojplanes=conf.input.wprojplanes,
-        specmode=conf.input.specmode,
-        spw=conf.input.spw,
-        stokes=conf.input.stokes,
-        weighting=conf.input.weighting,
-        robust=conf.input.robust,
-        pblimit=conf.input.pblimit,
-        mask=conf.input.mask,
-        usemask=conf.input.usemask,
-        restoration=conf.input.restoration,
-        restoringbeam=[conf.input.restoringbeam],
+    info(f"Starting CASA split for MS and channelNumber: {conf.input.inputMS[msIdx]}, {channelNumber}")
+
+    firstFreq = get_firstFreq(conf)
+    # TODO: bug with bandwidth?
+    startFreq = str(int(firstFreq) + int(conf.input.outputChanBandwidth) * (channelNumber - 1))
+    stopFreq = str(int(firstFreq) + int(conf.input.outputChanBandwidth) * channelNumber)
+    spw = "*:" + startFreq + "~" + stopFreq + "Hz"
+    # generate outputMS filename from INPUT_MS filename
+    outputMS = (
+        conf.env.dirVis
+        + get_basename_from_path(conf.input.inputMS[msIdx])
+        + conf.env.markerChannel
+        + str(channelNumber).zfill(3)
+        + ".ms"
     )
-    # export to .fits file
-    outImageName = imagename + ".image"
-    outImageFits = outImageName + ".fits"
-    info(f"Exporting: {outImageFits}")
-    casatasks.exportfits(imagename=outImageName, fitsimage=outImageFits, overwrite=True)
-
-    # Also create an smoothed image if conf.input.smoothbeam is truthy
-    if conf.input.smoothbeam:
-        outSmoothedName = imagename + ".image.smoothed"
-        outSmoothedFits = outSmoothedName + ".fits"
-        if conf.input.smoothbeam.find(",") > 0:
-            major, minor = conf.input.smoothbeam.split(",")
-        else:
-            major = conf.input.smoothbeam
-            minor = conf.input.smoothbeam
-        casatasks.imsmooth(imagename=outImageName, outfile=outSmoothedName, targetres=True,
-                kernel='gauss', major=major,
-                minor=minor, pa='0deg',
-                overwrite=True)
-        info(f"Exporting: {outSmoothedFits}")
-        casatasks.exportfits(imagename=outSmoothedName, fitsimage=outSmoothedFits, overwrite=True)
+    info(f"CASA split output file: {outputMS}")
+    casatasks.split(
+        vis=conf.input.inputMS[msIdx],
+        outputvis=outputMS,
+        observation=conf.input.observation,
+        field=str(conf.data.field),
+        spw=spw,
+        keepmms=False,
+        keepflags=False,
+        datacolumn=conf.input.datacolumn,
+    )
 
 
 def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
     '''
     '''
-    channelNoList = []
-    listing = glob(f"{conf.env.dirVis}/*{conf.env.markerChannel}*")
-    for filepath in listing:
-        # TODO: make this more generic, be carful with hard code 3 digits
-        startIndex = filepath.find(conf.env.markerChannel) + len(conf.env.markerChannel)
-        channelNoList.append(filepath[startIndex:startIndex+3])
-    channelNoList = sorted(list(set(channelNoList)))
+    # concatinate all channel lists for each ms in one list
+    concatChanList = []
+    for chanList in conf.data.predictedOutputChannels:
+        concatChanList += chanList
+    return concatChanList[int(slurmArrayTaskId)-1]
 
-    return channelNoList[int(slurmArrayTaskId)-1]
+def get_msIdx_from_slurmArrayTaskId(slurmArrayTaskId, conf):
+    '''
+    '''
+    msIdx = 0
+    tmpMSchannelLength = len(conf.data.predictedOutputChannels[0])
+    while int(slurmArrayTaskId) > tmpMSchannelLength:
+        msIdx += 1
+        tmpMSchannelLength += len(conf.data.predictedOutputChannels[msIdx])
+    return msIdx
+
+def delete_intermediate_files(conf):
+    #TODO
+    pass
 
 
 @click.command(context_settings=dict(
@@ -156,8 +145,8 @@ def main(ctx):
     # TODO: help: re-definition of casalog not working.
     # casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
 
-    channelInputMS = glob(f"{conf.env.dirVis}/*{conf.env.markerChannel}{channelNumber}*")
-    call_tclean(channelInputMS, channelNumber, conf)
+    msIdx = get_msIdx_from_slurmArrayTaskId(args.slurmArrayTaskId, conf)
+    call_split(channelNumber, conf, msIdx)
 
 
 if __name__ == "__main__":
