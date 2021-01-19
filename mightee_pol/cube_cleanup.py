@@ -18,6 +18,7 @@ import logging
 import datetime
 import argparse
 import os
+import shutil
 from logging import info, error
 
 import click
@@ -70,60 +71,48 @@ def main_timer(func):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-def call_split(channelNumber, conf, msIdx):
-    '''
-    '''
-    info(f"Starting CASA split for MS and channelNumber: {conf.input.inputMS[msIdx]}, {channelNumber}")
 
-    firstFreq = get_firstFreq(conf)
-    # TODO: bug with bandwidth?
-    startFreq = str(int(firstFreq) + int(conf.input.outputChanBandwidth) * (channelNumber - 1))
-    stopFreq = str(int(firstFreq) + int(conf.input.outputChanBandwidth) * channelNumber)
-    spw = "*:" + startFreq + "~" + stopFreq + "Hz"
-    # generate outputMS filename from INPUT_MS filename
-    outputMS = (
-        conf.env.dirVis
-        + get_basename_from_path(conf.input.inputMS[msIdx])
-        + conf.env.markerChannel
-        + str(channelNumber).zfill(3)
-        + ".ms"
-    )
-    info(f"CASA split output file: {outputMS}")
-    casatasks.split(
-        vis=conf.input.inputMS[msIdx],
-        outputvis=outputMS,
-        observation=conf.input.observation,
-        field=str(conf.data.field),
-        spw=spw,
-        keepmms=False,
-        keepflags=False,
-        datacolumn=conf.input.datacolumn,
-    )
-
-
-def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
+def delete_temporary_files(conf):
     '''
+    TODO: Find a better indicator than the hdf5 file for a sucessfull run.
+    Also, think about how to arrange the report script an the cleanup.
+    TODO: handle exception if directory is already deleted.
     '''
-    # concatinate all channel lists for each ms in one list
-    concatChanList = []
-    for chanList in conf.data.predictedOutputChannels:
-        concatChanList += chanList
-    return concatChanList[int(slurmArrayTaskId)-1]
+    run_success = False
+    pathCubeHdf5 =  os.path.join(os.path.join(conf.input.dirHdf5Output, conf.input.basename + conf.env.extCubeHdf5))
+    pathCubeSmoothedHdf5 =  os.path.join(os.path.join(conf.input.dirHdf5Output, conf.input.basename + conf.env.extCubeHdf5))
+    if os.path.isfile(pathCubeHdf5):
+        run_success = True
+        info(f"Found file: {pathCubeHdf5}")
+    else:
+        error(f"File not found: {pathCubeHdf5}")
 
-def get_msIdx_from_slurmArrayTaskId(slurmArrayTaskId, conf):
-    '''
-    '''
-    msIdx = 0
-    tmpMSchannelLength = len(conf.data.predictedOutputChannels[0])
-    while int(slurmArrayTaskId) > tmpMSchannelLength:
-        msIdx += 1
-        tmpMSchannelLength += len(conf.data.predictedOutputChannels[msIdx])
-    return msIdx
+    if conf.input.smoothbeam:
+        if run_success and os.path.isfile(pathCubeSmoothedHdf5):
+            run_success = True
+            info(f"Found file: {pathCubeSmoothedHdf5}")
+        else:
+            run_success = False
+            error(f"File not found: {pathCubeSmoothedHdf5}")
 
-def delete_intermediate_files(conf):
-    #TODO
-    pass
+    level = int(conf.input.cleanup)
+    if run_success:
+        info(f"Files found. Assuming the run went through sucessfully.")
+        info(f"Deleting temporary files according to --cleanup flag.")
+        if level == 0:
+            info(f"Cleanup flag: --cleanup {level}. Not deleting any files.")
+        elif level == 1:
+            info(f"Cleanup flag: --cleanup {level}. Deleting directory {conf.env.dirVis}.")
+            shutil.rmtree(conf.env.dirVis)
+        elif level == 2:
+            info(f"Cleanup flag: --cleanup {level}. Deleting directory {conf.env.dirVis} and {conf.env.dirImages}.")
+            shutil.rmtree(conf.env.dirVis)
+            shutil.rmtree(conf.env.dirImages)
+    else:
+        error("Files not found. Assuming run did not run through without errors. Not deleting temporary files.")
 
+    if level == 0:
+        info(f"Cleanup level {level}. Not deleting any temporary files.")
 
 @click.command(context_settings=dict(
     ignore_unknown_options=True,
@@ -140,13 +129,7 @@ def main(ctx):
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
     info("Scripts config: {0}".format(conf))
 
-    channelNumber = get_channelNumber_from_slurmArrayTaskId(args.slurmArrayTaskId, conf)
-
-    # TODO: help: re-definition of casalog not working.
-    # casatasks.casalog.setcasalog = conf.env.dirLogs + "cube_split_and_tclean-" + str(args.slurmArrayTaskId) + "-chan" + str(channelNumber) + ".casa"
-
-    msIdx = get_msIdx_from_slurmArrayTaskId(args.slurmArrayTaskId, conf)
-    call_split(channelNumber, conf, msIdx)
+    delete_temporary_files(conf)
 
 
 if __name__ == "__main__":

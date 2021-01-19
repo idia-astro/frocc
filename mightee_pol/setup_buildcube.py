@@ -313,6 +313,25 @@ def write_all_sbatch_files(conf):
     command = conf.env.prefixSingularity + ' python3 ' + scriptPath
     write_sbtach_file(filename, command, conf, sbatchDict)
 
+    # cube_cleanup
+    basename = "cube_cleanup"
+    filename = basename + ".sbatch"
+    sbatchDict = {
+            'array': "1-1%1",
+            'job-name': basename,
+            'output': "logs/" + basename + "-%A-%a.out",
+            'error': "logs/" + basename + "-%A-%a.err",
+            'cpus-per-task': 1,
+            'mem': "1GB",
+            'time': "01:00:00",
+            }
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath
+    write_sbtach_file(filename, command, conf, sbatchDict)
+
     # report
     basename = "cube_report"
     filename = basename + ".sbatch"

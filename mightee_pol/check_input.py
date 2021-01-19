@@ -3,6 +3,7 @@
 from mightee_pol.lhelpers import DotMap, get_dict_from_click_args
 from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL
 import sys
+import re
 import os
 '''
 -------------------------------------------------------------------------------
@@ -255,11 +256,25 @@ def check_path_inputMS(flagList, conf):
                 print(f"ERROR: File does not exists {inputMS}")
                 sys.exit()
 
+def check_filename_has_obsid(flagList, conf):
+    if "--fileXYphasePolAngleCoeffs" in flagList:
+        # TODO: deal with multiple inputMS
+        inputMS = flagList[flagList.index("--inputMS")+1]
+        basename = os.path.basename(inputMS)
+        try:
+            obsid = re.search(r"[0-9]{10}", basename)[0]
+        except Exception as e:
+            print(e)
+            print(f"ERROR: Could not find 10 digit observation ID in MS filename: {basename}")
+            sys.exit()
+    else:
+        pass
 
 def check_all(flagList):
     #conf = DotMap(get_dict_from_click_args(flagList))
     conf = None
     check_flags(flagList, conf)
+    check_filename_has_obsid(flagList, conf)
     #check_path_inputMS(flagList, conf)
     #check_flags(conf)
 

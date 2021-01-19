@@ -29,6 +29,12 @@ from glob import glob
 import re
 import sys
 import click
+import pandas as pd
+from io import StringIO
+
+import matplotlib as mpl
+mpl.use('Agg') # Backend that doesn't need X server
+from matplotlib import pyplot as plt
 
 import numpy as np
 from astropy.io import fits
@@ -48,6 +54,39 @@ logging.basicConfig(
 
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def second_order_poly(x, a, b, c):
+    #y = a*x**2 + b*x + c
+    poly = np.poly1d(a, b, c)
+    y = poly(x)
+    return y
+
+def get_correction_coefficients(conf, obsid):
+    try:
+        info(f"Reading coefficient file with rotation parameters: {conf.input.fileXYphasePolAngleCoeffs}")
+        with open("/idia/projects/mightee/mightee-pol/processed/cube_rotation_angles.txt", "r") as f:
+            rawString = f.read()
+        headerBody = (rawString[rawString.rfind("#")+1:]).strip().replace("  ", " ")
+        data = pd.read_csv(StringIO(headerBody), sep=" ")
+    except Exception as e:
+        error(e)
+        error(f"Problem reading {conf.input.fileXYphasePolAngleCoeffs}. Is the file in the correct format? Similar to:")
+        error("")
+        error("# CoeffsXY and coeffsPol are second order polynomials of the form y = ax^2 + bx + c")
+        error("# The XY phases must be rotated first prior to rotating the polarization angle.")
+        error("# The frequencies must be expressed in Hz and the angles in radians.")
+        error("#fieldname obsid coeffsXY_a coeffsXY_b coeffsXY_c coeffsPol_a coeffsPol_b coeffsPol_c")
+        error("XMMLSS12 1538856059 -9.3846e-18  2.3061e-08 -1.3353e+01 -4.6384e-19  1.4007e-09 -1.2145e+00")
+        error("XMMLSS12 1539286252  4.3397e-19 -1.1104e-09  3.4366e+00 -1.5629e-18  3.9078e-09 -2.0842e+00")
+        error("XMMLSS13 1538942495 -1.1168e-17  2.4598e-08 -1.2223e+01  6.3898e-19 -1.5138e-09  7.4407e-01")
+        error("...")
+
+
+    #data = pd.DataFrame([x.split(' ') for x in result.split('\n')])
+    data = data[data['obsid'].astype(str) == str(obsid)]
+    return data
+
+
 
 def get_and_add_custom_header(header, zdim, conf, mode="normal"):
     """
@@ -193,7 +232,7 @@ def write_statistics_file(statsDict, conf, mode="normal"):
         filepathStatistics = conf.input.basename + conf.env.extCubeSmoothedStatistics
     else:
         filepathStatistics = conf.input.basename + conf.env.extCubeStatistics
-    legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged"]
+    legendList = ["chanNo", "frequency [MHz]", "rmsStokesI [uJy/beam]", "rmsStokesV [uJy/beam]",  "maxStokesI [uJy/beam]", "flagged", "xyPhaseCorr", "polAngleCorr"]
     info("Writing statistics file: %s", filepathStatistics)
     with open(filepathStatistics, "w") as csvFile:
         writer = csv.writer(csvFile, delimiter="\t")
@@ -204,10 +243,38 @@ def write_statistics_file(statsDict, conf, mode="normal"):
             rmsI = round(statsDict["rmsI"][ii] * 1e6, 4)
             rmsV = round(statsDict["rmsV"][ii] * 1e6, 4)
             maxI = round(statsDict["maxI"][ii] * 1e6, 4)
+            xyPhaseCorr = round(statsDict["xyPhaseCorr"][ii], 4)
+            polAngleCorr = round(statsDict["polAngleCorr"][ii], 4)
             flagged = statsDict["flagged"][ii]
-            csvData.append([chanNo, freq, rmsI, rmsV, maxI, flagged])
+            csvData.append([chanNo, freq, rmsI, rmsV, maxI, flagged, xyPhaseCorr, polAngleCorr])
         writer.writerows(csvData)
 
+def plot_xyPhaseCorr_and_polAngleCorr(statsDict,  conf):
+    xData = statsDict['freq']
+    yData = statsDict['xyPhaseCorr']
+    y2Data = statsDict['polAngleCorr']
+    fig, ax1 = plt.subplots(figsize=(16,7.5))
+    ax1.set_title(r'xy-phase and polarization angle correction')
+    ax1.set_xlabel(r'frequency [Hz]',fontsize=22)
+    ax1.set_ylabel(r'angle [degree]',fontsize=22)
+    ax1.grid(b=True, which='major', linestyle='dashed')
+    ax1.grid(b=True, which='minor', linestyle='dotted')
+    ax1.minorticks_on()
+
+    ax1.plot(xData, yData, linestyle='-', marker='.', color='green', label="xy-phase correction")
+    ax1.plot(xData, y2Data, linestyle='-', marker='.', color='blue', label="pol. angle correction")
+
+    ax1.legend(frameon=True, fancybox=True)
+
+    #PDF
+    plotPath = conf.env.dirPlots+conf.input.basename+'.diagnostic-xyPhaseCorr-polAngleCorr.pdf'
+    info(f"Saving plot: {plotPath}")
+    fig.savefig(plotPath, bbox_inches = 'tight')
+    # PNG
+    plotPath = conf.env.dirPlots+conf.input.basename+'.diagnostic-xyPhaseCorr-polAngleCorr.png'
+    info(f"Saving plot: {plotPath}")
+    fig.savefig(plotPath, bbox_inches = 'tight')
+    #plt.show()
 
 
 def fill_cube_with_images(conf, mode="normal"):
@@ -234,6 +301,8 @@ def fill_cube_with_images(conf, mode="normal"):
     rmsDict["rmsV"] = []
     rmsDict["maxI"] = []
     rmsDict["flagged"] = []
+    rmsDict["polAngleCorr"] = []
+    rmsDict["xyPhaseCorr"] = []
     if mode == "smoothed":
         channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
     else:
@@ -274,16 +343,58 @@ def fill_cube_with_images(conf, mode="normal"):
             dataCube[0, ii, :, :] = stokesI
 
             stokesQ = hud[0].data[1, 0, :, :]
-            dataCube[1, ii, :, :] = stokesQ
-
             stokesU = hud[0].data[2, 0, :, :]
+            stokesV = hud[0].data[3, 0, :, :]
+
+            if conf.input.fileXYphasePolAngleCoeffs:
+                info("Starting XY phase and pol angle rotation.")
+                # grep obsid from MS filename. TODO: find something better
+                basename = os.path.basename(os.path.normpath(conf.input.inputMS[0]))
+                obsid = re.search(r"[0-9]{10}", basename)[0]
+                info(f"Uning observation ID (obsid): {obsid}")
+
+                coeffs = get_correction_coefficients(conf, obsid)
+                info(f"Using correction coefficients: {coeffs.to_dict()}")
+                info(f'Image frequency : {rmsDict["freq"][-1]}')
+                # correctXYPhase
+                coeffsXY_a = coeffs['coeffsXY_a'].to_numpy()
+                coeffsXY_b = coeffs['coeffsXY_b'].to_numpy()
+                coeffsXY_c = coeffs['coeffsXY_c'].to_numpy()
+                xyPhaseAngle = second_order_poly(rmsDict["freq"][-1], coeffsXY_a, coeffsXY_b, coeffsXY_c)
+                #xyPhaseAngle = xyPhaseAngle * np.pi/180
+                info(f"Using xy-phase angle: {xyPhaseAngle}")
+                stokesUtmp = stokesU*np.cos(xyPhaseAngle) - stokesV*np.sin(xyPhaseAngle)
+                stokesVtmp = stokesU*np.sin(xyPhaseAngle) + stokesV*np.cos(xyPhaseAngle)
+                # correctPolAngle
+                coeffsPol_a = coeffs['coeffsPol_a'].to_numpy()
+                coeffsPol_b = coeffs['coeffsPol_b'].to_numpy()
+                coeffsPol_c = coeffs['coeffsPol_c'].to_numpy()
+                polAngle = second_order_poly(rmsDict["freq"][-1], coeffsPol_a, coeffsPol_b, coeffsPol_c)
+                #polAngle = polAngle * np.pi/180
+                info(f"Using polarization angle: {polAngle}")
+                stokesQtmp = stokesQ*np.cos(polAngle) - stokesUtmp*np.sin(polAngle)
+                stokesUtmp = stokesQ*np.sin(polAngle) + stokesUtmp*np.cos(polAngle)
+                stokesQ = stokesQtmp
+                stokesU = stokesUtmp
+                stokesV = stokesVtmp
+                rmsDict["xyPhaseCorr"].append(xyPhaseAngle)
+                rmsDict["polAngleCorr"].append(polAngle)
+
+            elif not conf.input.fileXYphasePolAngleCoeffs:
+                rmsDict["xyPhaseCorr"].append(np.nan)
+                rmsDict["polAngleCorr"].append(np.nan)
+
+            dataCube[1, ii, :, :] = stokesQ
             dataCube[2, ii, :, :] = stokesU
+            dataCube[3, ii, :, :] = stokesV
 
         elif stokesVflag:
             dataCube[:, ii, :, :] = np.nan
             rmsDict["rmsI"].append(np.nan)
             rmsDict["maxI"].append(np.nan)
             rmsDict["flagged"].append(True)
+            rmsDict["xyPhaseCorr"].append(np.nan)
+            rmsDict["polAngleCorr"].append(np.nan)
             info(
                 "Stokes V RMS noise of {0} is below below 1 [uJy/beam]. Flagging Stokes IQUV.".format(round(rmsDict["rmsV"][-1] * 1e6, 2))
             )
@@ -295,7 +406,7 @@ def fill_cube_with_images(conf, mode="normal"):
 
     hudCube.close()
     # TODO, check whether lowestChanNo is necessary
-    lowestChanNo = get_lowest_channelNo_with_data_in_cube(cubeName)
+    # lowestChanNo = get_lowest_channelNo_with_data_in_cube(cubeName)
     addFitsHeaderDict = {
             "CRPIX3": 1, #lowestChanNo,
             "OBJECT": str(conf.data.field),
@@ -305,6 +416,8 @@ def fill_cube_with_images(conf, mode="normal"):
             }
     update_fits_header_of_cube(cubeName, addFitsHeaderDict)
     write_statistics_file(rmsDict, conf, mode=mode)
+    if conf.input.fileXYphasePolAngleCoeffs:
+        plot_xyPhaseCorr_and_polAngleCorr(rmsDict, conf)
 
 def move_casalogs_to_dirLogs(conf):
     '''

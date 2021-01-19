@@ -28,7 +28,7 @@ from mightee_pol.check_input import check_all, print_usage, print_help, print_he
 from mightee_pol.check_status import print_status
 from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_CONFIG_USER, FILEPATH_CONFIG_TEMPLATE
 from mightee_pol.logger import *
-from mightee_pol.setup_buildcube import write_all_sbatch_files
+from mightee_pol.setup_buildcube import write_all_sbatch_files, copy_runscripts
 
 
 # TODO: put this in default_config.* at a later stage
