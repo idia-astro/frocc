@@ -1,0 +1,297 @@
+# =============================================================================
+#
+# Default config template file
+# ----------------------------
+#
+# This file serves as config file for sane defaults for the MeerKAT MIGHTEE 
+# polarisation pipeline. The values in this file should not be edited. Instead
+# every value can be overwritten in `meerkat-pol_default_config.txt` (after
+# creating it via `meerkat-pol --createConfig --inputMS <path to input.ms>`).
+# Don't forget to also copy the corrosponding sections like [input] when
+# overwriting.
+#
+# =============================================================================
+
+[input]
+# DESCRIPTION: The path to the input MS. Multiple paths can be specified to
+# combine two observations of the same object during the `tclean` task.
+# TYPE: str or list(str)
+# TYPE-COMMENT: For multipe: Can be list of strings or comma seperated string.
+# EXAMPLE: "/path/data.ms" or ["input1.ms", input2.ms"] or "input1.ms,input2.ms"
+inputMS = ""
+
+# DESCRIPTION: The basename of all output files. If left empty this will be
+# derived from the input filename and the a timestamp of today.
+# TYPE: str
+# EXAMPLE: COSMOS.field3.20200505
+basename = ""
+
+# DESCRIPTION: List of frequency ranges in [MHz] to include (opportunistic) in
+# the data cube. Non valid ranges are ignored.
+# TYPE: list(str)
+# TYPE-COMMENT: The String must be two numerics connected by a dash.
+# EXAMPLE: ["890-1000", "1200-1700"]
+freqRanges = ["880-1680"]
+
+# DESCRIPTION: Specify field name of MS. Leave empty "" for automatically
+# choose the first field in the MS's field list.
+# TYPE: str
+# EXAMPLE: "COSMOS"
+field = ""
+
+# DESCRIPTION: Channel width in [Hz] of the final data cube. CAUTION: CASA
+# deviates from this value slightly in order to match the data within a spw.
+# TYPE: float or str
+# EXAMPLE: 2.5e6
+outputChanBandwidth = 2.5e6
+
+# DESCRIPTION: The observation ID of the MS.
+# TYPE: int or str
+# EXAMPLE: 0 or "" for all observations
+observation = ""
+
+# DESCRIPTION: File for the XY-phase and polarisation angle corrections.
+# TYPE: str (path to coefficient file)
+# EXAMPLE: "coefficients.txt" TODO give example of file format.
+fileXYphasePolAngleCoeffs = ""
+
+# =============================================================================
+# split
+# https://casa.nrao.edu/docs/TaskRef/split-task.html
+
+# DESCRIPTION: The CASA `split` datacolumn.
+# https://casa.nrao.edu/docs/TaskRef/split-task.html
+# TYPE: str
+datacolumn = 'data'
+
+
+# =============================================================================
+# tclean
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+mask = ""
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+usemask = "user"
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int or str
+niter = 500
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int or str
+gain = 0.1
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+deconvolver = "clark"
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: float
+threshold = 0.00001
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int
+imsize = 512
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: float
+cell = 1.5
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+gridder = "wproject"
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int
+wprojplanes = 64
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+specmode = "mfs"
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+spw = ""
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+stokes = "IQUV"
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+weighting = "briggs"
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str or float
+robust = 0.0
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: int
+pblimit = -1
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: bool
+restoration = True
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
+# EXAMPLE: "15arcsec"
+restoringbeam = ""
+
+# =============================================================================
+# imsmooth
+# https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
+# CAUTION: If smoothbeam is smaller than the image native resolution tclean
+# will fail with "Unable to reach target resolution ..."
+# TYPE: string
+# EXAMPLE: "15arcsec" or "12arcsec,13arcsec" or empty string "" for no smoothing
+smoothbeam = ""
+
+
+# =============================================================================
+# Environment related config where the user should have more control over
+#
+# DESCRIPTION: Path to hdf5Converter
+# TYPE: str
+hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
+
+# DESCRIPTION: Directory to output the hdf5 file to.
+# TYPE: str
+dirHdf5Output = ""
+
+# DESCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
+# order matters!
+# TYPE: list(str)
+runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+
+# DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
+# job-name, cpus-per-task may be overwirtten by the pipline
+# TYPE: dict
+slurmDefaultHeader = {'array': '1-30%30', 'nodes': 1, 'ntasks-per-node': 1,'cpus-per-task': 4, 'mem': "29GB", 'job-name': "NoName", 'output': '/logs/NoName-%A-%a.out', 'error': '/logs/NoName-%A-%a.err', 'partition': "Main", 'time': "16:00:00", 'account': "b03-idia-ag"}
+
+# DESCRIPTION: E-mail address the report should be sent to.
+# TYPE: str
+email = ""
+
+# DESCRIPTION: Working directory for the cube pipeline. This directory will be
+# created if it does not exists.
+# TYPE: str
+dirWorking = ""
+
+# DESCRIPTION: Output directory for the output files. This directory will be
+# created if it does not exists. Carful with relative paths; everything will be
+# relative as seen from the working directory.
+# TYPE: str
+dirOutput = ""
+
+# DESCRIPTION: Deletes temporary directories after a sucessfull run. A sucessfull
+# run is determent by whether the exspected hdf5 output files exists (TODO:
+# implement better indicator).
+# --cleanup 0 keeps all temporary files, --cleanup 1 deletes the $dirVis
+# directory, --cleanup 2 deletes $dirVis and $dirImages directories.
+# TYPE: int
+cleanup = 2
+
+# DESCRIPTION: TODO: Default meerkat-pol configuration file.
+# TYPE: str
+# configFile = "meerkat-pol_default_config.txt"
+
+# =============================================================================
+# Pipeline and program environment specific parameters
+[env]
+dirLogs = "logs/"
+dirImages = "images/"
+dirVis = "vis/"
+dirPlots = "plots/"
+dirRMSYplots = "rmsy-plots/"
+dirRMSYdata = "rmsy-data/"
+#dirList = ["logs/", "images/", "vis/", "plots/", "rmsy-plots/", "rmsy-data/"]
+dirReport = "report/"
+#dirList = ["logs/", "images/", "vis/", "plots/", "rmsy-plots/", "rmsy-data/"]
+dirList = ["dirLogs", "dirImages", "dirVis", "dirPlots", "dirReport"]
+
+# string marker for channel files
+markerChannel = ".chan"
+
+
+prefixSingularity = "singularity exec /users/lennart/container/meerkat-pol.simg"
+#prefixSingularity = "singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
+
+# The container and headnode have different python3 paths, hence the python3 $HOME...
+# CAUTION ${HOME} does not get resolved by singularity. A string.replace() in setup_buildcube_wrapper.py is done to fix that.
+#commandSingularity = "python ${HOME}/.local/bin/setup_buildcube"
+commandSingularity = "setup_buildcube"
+#env = {"PATH": "${PATH}:${HOME}/.local/bin/"}
+
+extTcleanImage = ".image.fits"
+extTcleanImageSmoothed = ".image.smoothed.fits"
+
+extCubeIORStatistics = ".cube.statistics.ior-flagged.tab"
+
+extCubeFits = ".cube.fits"
+extCubeHdf5 = ".cube.hdf5"
+extCubeStatistics = ".cube.statistics.tab"
+extCubePreviewJpg = ".cube.preview.jpg"
+extCubeMaxStokesIPlotPdf = ".cube.maxStokesI.pdf"
+
+extCubeSmoothedFits = ".cube.smoothed.fits"
+extCubeSmoothedHdf5 = ".cube.smoothed.hdf5"
+extCubeSmoothedStatistics = ".cube.smoothed.statistics.tab"
+
+extCubeAveragemapFits = ".cube.smoothed.average-map.fits"
+extCubeAveragemapStatistics = ".cube.statistics.smoothed.average-map.tab"
+extCubeAveragemapPreviewJpg = ".cube.smoothed.average-map.preview.jpg"
+
+outputExtList = ["extCubeIORStatistics",  "extCubeFits", "extCubeHdf5", "extCubeStatistics"]
+outputExtSmoothedList = ["extCubeSmoothedFits", "extCubeSmoothedHdf5", "extCubeSmoothedStatistics", "extCubeAveragemapFits", "extCubeAveragemapStatistics"]
+
+# DESCRIPTION: The API url to talk to.
+# TYPE: str
+apiUrl = "https://idia-api.lennartheino.de/v1/upload"
+
+envVarApikey = 'MEERKAT_POL_APIKEY'
+
+commandCasa5 = "casa --nogui --log2term -c "
+commandPandoc = "pandoc --latex-engine=xelatex --highlight-style=tango -o "
+extShortListobs = ".short-listobs.txt"
+extReportMD = ".report.md"
+extReportPdf = ".report.pdf"
+extReportTemplate = ".report.template.md"
+
+extRuntimePdf = ".runtime.pdf"
+
+# =============================================================================
+# Values to help optimizing cluster load
+hdf5ConverterMaxCpuCores = 30
+tcleanMaxCpuCores = 6
+tcleanMinCpuCores = 1
+tcleanMaxMemory = 20  # in GB
+tcleanMinMemory = 5   # in GB
+# maximum number of the cluster nodes to use
+maxSimultaniousNodes = 40
+
