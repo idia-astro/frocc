@@ -87,8 +87,11 @@ which of the output files were created successfully and which failed.
 {{ status }}
 ~~~~
 
-RMS Noise via Stokes V, Stokes I maximum and flagging
-=====================================================
+{% if conf.input.fileXYphasePolAngleCoeffs  %}
+Plots: RMS Noise via Stokes V, Stokes I maximum, flagging, xy-phase and polarisation angle correction
+====================================================================================================={% else %}
+Plots: RMS Noise via Stokes V, Stokes I maximum and flagging
+============================================================{% endif %}
 The plot below shows the RMS noise, estimated via the absolute median deviation,
 derived from Stokes V. Very noisy channels are flagged by an iterative outlier
 rejection.
@@ -101,6 +104,12 @@ shown here.]({{ iorPlotFilePath }} )
 
 ![**Stokes I max over frequency:** Stokes I at the position of the brightest pixel in the
 first valid channel.]({{ joinpath(conf.env.dirReport, conf.input.basename + conf.env.extCubeMaxStokesIPlotPdf) }} )
+
+{% if conf.input.fileXYphasePolAngleCoeffs  %}
+![**xy-phase and polarisation angle correction:**
+The corrections are done via a second order fit with coefficients provided by
+{{ conf.input.fileXYphasePolAngleCoeffs }}]({{ xyPhasePolCorrPlotFilePath }} )
+{% endif %}
 
 Input parameter
 ===============

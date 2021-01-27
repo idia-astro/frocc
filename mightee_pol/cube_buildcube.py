@@ -30,6 +30,7 @@ import re
 import sys
 import click
 import pandas as pd
+import seaborn as sns
 
 import matplotlib as mpl
 mpl.use('Agg') # Backend that doesn't need X server
@@ -51,6 +52,10 @@ logging.basicConfig(
     format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO
 )
 
+mpl.rcParams['xtick.labelsize'] = 22
+mpl.rcParams['ytick.labelsize'] = 22
+mpl.rcParams['axes.titlesize'] = 26
+sns.set_style("ticks")
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -252,7 +257,7 @@ def plot_xyPhaseCorr_and_polAngleCorr(statsDict,  conf):
     fig, ax1 = plt.subplots(figsize=(16,7.5))
     ax1.set_title(r'xy-phase and polarization angle correction')
     ax1.set_xlabel(r'frequency [Hz]',fontsize=22)
-    ax1.set_ylabel(r'angle [degree]',fontsize=22)
+    ax1.set_ylabel(r'angle [rad]',fontsize=22)
     ax1.grid(b=True, which='major', linestyle='dashed')
     ax1.grid(b=True, which='minor', linestyle='dotted')
     ax1.minorticks_on()

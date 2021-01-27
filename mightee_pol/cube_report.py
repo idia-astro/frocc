@@ -141,7 +141,10 @@ def write_jinja_reportTemplate(conf):
     listobsOutputList = [ read_file_as_string(s) for s in write_listobs_for_inputMS_and_get_filenames(conf) ]
     timestamp = get_timestamp("%H:%M:%S")
     chanStatsDict = get_cube_channel_statsDict(conf)
-    iorPlotFilePath = sorted(glob(os.path.join(conf.env.dirPlots, "*pdf")))[-1]
+    iorPlotFilePath = sorted(glob(os.path.join(conf.env.dirPlots, "*diagnostic-ior*pdf")))[-1]
+    xyPhasePolCorrPlotFilePath = sorted(glob(os.path.join(conf.env.dirPlots, "*diagnostic-xyPhaseCorr-polAngleCorr*pdf")))[-1]
+    print(iorPlotFilePath)
+    print(xyPhasePolCorrPlotFilePath)
     runtimeDict = get_total_runtime_formated(conf)
 
     s = read_file_as_string(FILEPATH_JINJA_TEMPLATE)
@@ -154,6 +157,7 @@ def write_jinja_reportTemplate(conf):
             chanStatsDict = chanStatsDict,
             iorPlotFilePath = iorPlotFilePath,
             runtimeDict = runtimeDict,
+            xyPhasePolCorrPlotFilePath = xyPhasePolCorrPlotFilePath,
             )
 
     outFile = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportTemplate)
