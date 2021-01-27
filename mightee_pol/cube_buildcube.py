@@ -30,7 +30,6 @@ import re
 import sys
 import click
 import pandas as pd
-from io import StringIO
 
 import matplotlib as mpl
 mpl.use('Agg') # Backend that doesn't need X server
@@ -55,19 +54,16 @@ logging.basicConfig(
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def second_order_poly(x, a, b, c):
+def second_order_poly(x, coeffs):
     #y = a*x**2 + b*x + c
-    poly = np.poly1d(a, b, c)
+    poly = np.poly1d(coeffs)
     y = poly(x)
     return y
 
 def get_correction_coefficients(conf, obsid):
     try:
         info(f"Reading coefficient file with rotation parameters: {conf.input.fileXYphasePolAngleCoeffs}")
-        with open("/idia/projects/mightee/mightee-pol/processed/cube_rotation_angles.txt", "r") as f:
-            rawString = f.read()
-        headerBody = (rawString[rawString.rfind("#")+1:]).strip().replace("  ", " ")
-        data = pd.read_csv(StringIO(headerBody), sep=" ")
+        df = pd.read_csv(conf.input.fileXYphasePolAngleCoeffs, header=3, delim_whitespace=True)
     except Exception as e:
         error(e)
         error(f"Problem reading {conf.input.fileXYphasePolAngleCoeffs}. Is the file in the correct format? Similar to:")
@@ -82,9 +78,9 @@ def get_correction_coefficients(conf, obsid):
         error("...")
 
 
-    #data = pd.DataFrame([x.split(' ') for x in result.split('\n')])
-    data = data[data['obsid'].astype(str) == str(obsid)]
-    return data
+    #df = pd.dfFrame([x.split(' ') for x in result.split('\n')])
+    df = df[df['obsid'].astype(str) == str(obsid)]
+    return df
 
 
 
@@ -356,20 +352,18 @@ def fill_cube_with_images(conf, mode="normal"):
                 coeffs = get_correction_coefficients(conf, obsid)
                 info(f"Using correction coefficients: {coeffs.to_dict()}")
                 info(f'Image frequency : {rmsDict["freq"][-1]}')
+
                 # correctXYPhase
-                coeffsXY_a = coeffs['coeffsXY_a'].to_numpy()
-                coeffsXY_b = coeffs['coeffsXY_b'].to_numpy()
-                coeffsXY_c = coeffs['coeffsXY_c'].to_numpy()
-                xyPhaseAngle = second_order_poly(rmsDict["freq"][-1], coeffsXY_a, coeffsXY_b, coeffsXY_c)
+                coeffsXY = [coeffs['coeffsXY_a'].to_numpy()[0], coeffs['coeffsXY_b'].to_numpy()[0], coeffs['coeffsXY_c'].to_numpy()[0]]
+                xyPhaseAngle = second_order_poly(rmsDict["freq"][-1], coeffsXY)
                 #xyPhaseAngle = xyPhaseAngle * np.pi/180
                 info(f"Using xy-phase angle: {xyPhaseAngle}")
                 stokesUtmp = stokesU*np.cos(xyPhaseAngle) - stokesV*np.sin(xyPhaseAngle)
                 stokesVtmp = stokesU*np.sin(xyPhaseAngle) + stokesV*np.cos(xyPhaseAngle)
+
                 # correctPolAngle
-                coeffsPol_a = coeffs['coeffsPol_a'].to_numpy()
-                coeffsPol_b = coeffs['coeffsPol_b'].to_numpy()
-                coeffsPol_c = coeffs['coeffsPol_c'].to_numpy()
-                polAngle = second_order_poly(rmsDict["freq"][-1], coeffsPol_a, coeffsPol_b, coeffsPol_c)
+                coeffsPol = [coeffs['coeffsPol_a'].to_numpy()[0], coeffs['coeffsPol_b'].to_numpy()[0], coeffs['coeffsPol_c'].to_numpy()[0]]
+                polAngle = second_order_poly(rmsDict["freq"][-1], coeffsPol)
                 #polAngle = polAngle * np.pi/180
                 info(f"Using polarization angle: {polAngle}")
                 stokesQtmp = stokesQ*np.cos(polAngle) - stokesUtmp*np.sin(polAngle)

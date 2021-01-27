@@ -260,7 +260,7 @@ def check_filename_has_obsid(flagList, conf):
     if "--fileXYphasePolAngleCoeffs" in flagList:
         # TODO: deal with multiple inputMS
         inputMS = flagList[flagList.index("--inputMS")+1]
-        basename = os.path.basename(inputMS)
+        basename = os.path.basename(inputMS.strip("/"))
         try:
             obsid = re.search(r"[0-9]{10}", basename)[0]
         except Exception as e:
