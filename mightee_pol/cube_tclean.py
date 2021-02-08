@@ -100,14 +100,24 @@ def call_tclean(channelInputMS, channelNumber, conf):
         restoringbeam=[conf.input.restoringbeam],
     )
     # export to .fits file
-    outImageName = imagename + ".image"
+    outImageName = ""
+    listCasaImageExtensions = [".image.tt0", ".image"]
+    for ext in listCasaImageExtensions:
+        if os.path.exists(imagename + ext):
+            outImageName = imagename + ".image"
+            info(f"CASA image file found: {outImageName}")
+        else:
+            info(f"CASA image file not found: {imagename + ext}")
+    if not outImageName:
+        error(f"Could not find CASA image file {imagename} with any of the extensions {listCasaImageExtensions}.")
+
     outImageFits = outImageName + ".fits"
     info(f"Exporting: {outImageFits}")
     casatasks.exportfits(imagename=outImageName, fitsimage=outImageFits, overwrite=True)
 
     # Also create an smoothed image if conf.input.smoothbeam is truthy
     if conf.input.smoothbeam:
-        outSmoothedName = imagename + ".image.smoothed"
+        outSmoothedName = outImageName + ".smoothed"
         outSmoothedFits = outSmoothedName + ".fits"
         if conf.input.smoothbeam.find(",") > 0:
             major, minor = conf.input.smoothbeam.split(",")
