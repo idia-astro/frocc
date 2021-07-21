@@ -27,6 +27,7 @@ import csv
 import datetime
 from glob import glob
 import re
+import shutil
 import sys
 import click
 
@@ -58,7 +59,8 @@ def make_empty_image(conf, mode="normal"):
     The data cube dimensions are derived from the cube images.
 
     """
-    cubeNameInput = conf.input.basename + conf.env.extCubeSmoothedFits
+    cubeNameInput = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeSmoothedFits)
+    cubeNameOutput = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeAveragemapFits)
         
     info(SEPERATOR)
     info(f"Getting image dimension for data cube from: {cubeNameInput}")
@@ -89,7 +91,6 @@ def make_empty_image(conf, mode="normal"):
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
 
-    cubeNameOutput = conf.input.basename + conf.env.extCubeAveragemapFits
 
     header.tofile(cubeNameOutput, overwrite=True)
 
@@ -141,8 +142,10 @@ def fill_cube_with_images(conf, mode="normal"):
 
 
     """
-    cubeNameInput = conf.input.basename + conf.env.extCubeSmoothedFits
-    cubeNameOutput = conf.input.basename + conf.env.extCubeAveragemapFits
+
+    cubeNameInput = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeSmoothedFits)
+    cubeNameOutput = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeAveragemapFits)
+
     info(SEPERATOR)
     info(f"Opening data cube: {cubeNameInput}")
     hudCubeInput = fits.open(cubeNameInput, memmap=True, ignore_missing_end=True, mode="update")
@@ -203,6 +206,12 @@ def fill_cube_with_images(conf, mode="normal"):
         }
     update_fits_header_of_cube(cubeNameOutput, addFitsHeaderDict)
     write_statistics_file(statsDict, conf, mode=mode)
+
+    # make a copy to the hdf5 output directory
+    try:
+        shutil.copyfile(cubeNameOutput, os.path.join(conf.input.dirHdf5Output, os.path.basename(cubeNameOutput)))
+    except shutil.SameFileError:
+        pass
 
 
 

@@ -75,7 +75,7 @@ def get_correction_coefficients(conf, obsid):
         error("")
         error("# CoeffsXY and coeffsPol are second order polynomials of the form y = ax^2 + bx + c")
         error("# The XY phases must be rotated first prior to rotating the polarization angle.")
-        error("# The frequencies must be expressed in Hz and the angles in radians.")
+        error("# The frequencies must be expressed in GHz and the angles in radians.")
         error("#fieldname obsid coeffsXY_a coeffsXY_b coeffsXY_c coeffsPol_a coeffsPol_b coeffsPol_c")
         error("XMMLSS12 1538856059 -9.3846e-18  2.3061e-08 -1.3353e+01 -4.6384e-19  1.4007e-09 -1.2145e+00")
         error("XMMLSS12 1539286252  4.3397e-19 -1.1104e-09  3.4366e+00 -1.5629e-18  3.9078e-09 -2.0842e+00")
@@ -120,6 +120,32 @@ def get_and_add_custom_header(header, zdim, conf, mode="normal"):
     #    header["CTYPE3"] = ("FREQ", "")
     return header
 
+def get_cropped_size_in_px(conf):
+    if type(conf.input.crop) == type("string"):
+        width, height = conf.input.crop.strip().split(",")
+    else:
+        width, height = conf.input.crop
+    width_in_px = 0
+    height_in_px = 0
+    width = str(width)
+    height = str(height)
+    if width.endswith("px") or width.isdigit():
+        width_in_px = int(width.replace("px", ""))
+    elif width.endswith("arcsec"):
+        width_in_px = int(float(width.replace("arcsec", "")) / float(conf.input.cell))
+    elif width.endswith("deg"):
+        width_in_px = int(float(width.replace("deg", ""))*3600 / float(conf.input.cell))
+
+    if height.endswith("px") or height.isdigit():
+        height_in_px = int(height.replace("px", ""))
+    elif height.endswith("arcsec"):
+        height_in_px = int(float(height.replace("arcsec", "")) / float(conf.input.cell))
+    elif height.endswith("deg"):
+        height_in_px = int(float(height.replace("deg", ""))*3600 / float(conf.input.cell))
+    return (width_in_px, height_in_px)
+
+
+
 
 def make_empty_image(conf, mode="normal"):
     """
@@ -137,9 +163,20 @@ def make_empty_image(conf, mode="normal"):
     lowestChannelFitsfile = channelFitsfileList[0]
     highestChannelFitsfile = channelFitsfileList[-1]
     info(SEPERATOR)
-    info("Getting image dimension for data cube from: %s", lowestChannelFitsfile)
-    with fits.open(lowestChannelFitsfile, memmap=True) as hud:
-        xdim, ydim = np.squeeze(hud[0].data).shape[-2:]
+    if conf.input.crop:
+        info("Getting image dimension for data cube from flag '--crop %s'", conf.input.crop)
+        xdim, ydim = get_cropped_size_in_px(conf)
+        with fits.open(lowestChannelFitsfile, memmap=True) as hud:
+            xdim_check, ydim_check = np.squeeze(hud[0].data).shape[-2:]
+        if xdim_check < xdim or ydim_check < ydim:
+            info(f"Input dimensions {xdim_check}px,{ydim_check}px are lower than target '--crop {conf.input.crop}'")
+            info(f"Falling back to: {xdim_check}px,{ydim_check}px")
+            xdim = xdim_check
+            ydim = xdim_check
+    else:
+        info("Getting image dimension for data cube from: %s", lowestChannelFitsfile)
+        with fits.open(lowestChannelFitsfile, memmap=True) as hud:
+            xdim, ydim = np.squeeze(hud[0].data).shape[-2:]
     info("X-dimension: %s", xdim)
     info("Y-dimension: %s", ydim)
 
@@ -168,11 +205,17 @@ def make_empty_image(conf, mode="normal"):
     header = get_and_add_custom_header(header, zdim, conf, mode=mode)
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
+        info(header["CRPIX1"])
+        info(header["CRPIX2"])
+        header["CRPIX1"] = int(xdim/2)
+        header["CRPIX2"] = int(ydim/2)
+        info(header["CRPIX1"])
+        info(header["CRPIX2"])
 
     if mode == "smoothed":
-        cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
+        cubeName = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeSmoothedFits)
     else:
-        cubeName = conf.input.basename + conf.env.extCubeFits
+        cubeName = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeFits)
 
     header.tofile(cubeName, overwrite=True)
 
@@ -278,6 +321,28 @@ def plot_xyPhaseCorr_and_polAngleCorr(statsDict,  conf):
     #plt.show()
 
 
+def get_cropped_numpy_plane(conf, plane):
+    if conf.input.crop:
+        plane_height, plane_width = plane.shape
+        print(plane_width, plane_height)
+        width, height = get_cropped_size_in_px(conf)
+        print(width, height)
+
+        if plane_width < width or plane_height < height:
+            #info(f"Input dimensions {plane_width}px,{plane_height}px are lower than target '--crop {conf.input.crop}'")
+            #info(f"Falling back to: {plane_width}px,{plane_height}px")
+            width = plane_width
+            height = plane_height
+
+        left = int(plane_width/2 - width/2)
+        top = int(plane_height/2 - height/2)
+        right = int(plane_width/2 + width/2)
+        bottom = int(plane_height/2 + height/2)
+        plane = plane[top:bottom, left:right]
+        print(plane.shape)
+    return plane
+
+
 def fill_cube_with_images(conf, mode="normal"):
     """
     Fills the empty data cube with fits data.
@@ -285,9 +350,10 @@ def fill_cube_with_images(conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
+        cubeName = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeSmoothedFits)
     else:
-        cubeName = conf.input.basename + conf.env.extCubeFits
+        cubeName = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeFits)
+
     info(SEPERATOR)
     info(f"Opening data cube: {cubeName}")
     # TODO: debug: if ignore_missing_end is not true I get an error.
@@ -321,7 +387,7 @@ def fill_cube_with_images(conf, mode="normal"):
         try:
             hud = fits.open(channelFitsfile, memmap=True)
             rmsDict['freq'].append(hud[0].header["CRVAL3"])
-            stokesV = hud[0].data[3, 0, :, :]
+            stokesV = get_cropped_numpy_plane(conf, hud[0].data[3, 0, :, :])
             checkedArray, std = check_rms(stokesV)
             rmsDict["rmsV"].append(std)
             dataCube[3, ii, :, :] = checkedArray
@@ -336,16 +402,16 @@ def fill_cube_with_images(conf, mode="normal"):
             rmsDict["rmsV"].append(np.nan)
 
         if not stokesVflag:
-            stokesI = hud[0].data[0, 0, :, :]
+            stokesI = get_cropped_numpy_plane(conf, hud[0].data[0, 0, :, :])
             std = get_std_via_mad(stokesI)
             rmsDict["rmsI"].append(std)
             rmsDict["maxI"].append(np.max(stokesI))
             rmsDict["flagged"].append(False)
             dataCube[0, ii, :, :] = stokesI
 
-            stokesQ = hud[0].data[1, 0, :, :]
-            stokesU = hud[0].data[2, 0, :, :]
-            stokesV = hud[0].data[3, 0, :, :]
+            stokesQ = get_cropped_numpy_plane(conf, hud[0].data[1, 0, :, :])
+            stokesU = get_cropped_numpy_plane(conf, hud[0].data[2, 0, :, :])
+            stokesV = get_cropped_numpy_plane(conf, hud[0].data[3, 0, :, :])
 
             if conf.input.fileXYphasePolAngleCoeffs:
                 info("Starting XY phase and pol angle rotation.")
@@ -358,17 +424,17 @@ def fill_cube_with_images(conf, mode="normal"):
                 info(f"Using correction coefficients: {coeffs.to_dict()}")
                 info(f'Image frequency : {rmsDict["freq"][-1]}')
 
-                # correctXYPhase
+                # correctXYPhase, and convert from GHz to Hz
                 coeffsXY = [coeffs['coeffsXY_a'].to_numpy()[0], coeffs['coeffsXY_b'].to_numpy()[0], coeffs['coeffsXY_c'].to_numpy()[0]]
-                xyPhaseAngle = second_order_poly(rmsDict["freq"][-1], coeffsXY)
+                xyPhaseAngle = second_order_poly(rmsDict["freq"][-1]*1e-9, coeffsXY)
                 #xyPhaseAngle = xyPhaseAngle * np.pi/180
                 info(f"Using xy-phase angle: {xyPhaseAngle}")
                 stokesUtmp = stokesU*np.cos(xyPhaseAngle) - stokesV*np.sin(xyPhaseAngle)
                 stokesVtmp = stokesU*np.sin(xyPhaseAngle) + stokesV*np.cos(xyPhaseAngle)
 
-                # correctPolAngle
+                # correctPolAngle, and convert from GHz to Hz
                 coeffsPol = [coeffs['coeffsPol_a'].to_numpy()[0], coeffs['coeffsPol_b'].to_numpy()[0], coeffs['coeffsPol_c'].to_numpy()[0]]
-                polAngle = second_order_poly(rmsDict["freq"][-1], coeffsPol)
+                polAngle = second_order_poly(rmsDict["freq"][-1]*1e-9, coeffsPol)
                 #polAngle = polAngle * np.pi/180
                 info(f"Using polarization angle: {polAngle}")
                 stokesQtmp = stokesQ*np.cos(polAngle) - stokesUtmp*np.sin(polAngle)
@@ -387,6 +453,7 @@ def fill_cube_with_images(conf, mode="normal"):
             dataCube[2, ii, :, :] = stokesU
             dataCube[3, ii, :, :] = stokesV
 
+        #if False:
         elif stokesVflag:
             dataCube[:, ii, :, :] = np.nan
             rmsDict["rmsI"].append(np.nan)

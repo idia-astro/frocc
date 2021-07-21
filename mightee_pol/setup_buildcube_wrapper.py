@@ -36,7 +36,7 @@ from mightee_pol.setup_buildcube import write_all_sbatch_files, copy_runscripts
 PREFIX_SRUN = "srun -N 1 --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 2 --time 00:30:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
-COMMAND = "setup_buildcube"
+#COMMAND = "setup_buildcube"
 
 PATH_HOME = expanduser("~") + "/"
 
@@ -87,12 +87,15 @@ def main(ctx):
         print_starting_banner("MEERKAT-POL --createConfig")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
         ctx.args.remove("--createConfig")
+
     if "--createScripts" in ctx.args:
         print_starting_banner("MEERKAT-POL --createScripts")
         # if [data] scrtion doesnent exists start the container, else give warning and write scripts
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
+        print("!!!!!!!!")
         if not conf.data:
             commandList = PREFIX_SRUN.split(" ") + conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args
+            print(commandList)
             logger.info(f"Command: {' '.join(commandList)}")
             subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": os.environ["PATH"], "PATH": os.environ["PATH"], "PYTHONPATH": os.environ["PYTHONPATH"]})
         else:

@@ -189,10 +189,54 @@ def check_if_inputMS_and_createScrits_come_together(flagList):
         print(f' `meerkat-pol --help` to list all valid flags.')
         sys.exit()
     
+def check_if_crop_has_right_format(flagList):
+    '''
+    TODO: filter -- and - prefix handling better
+    '''
+    if "--crop" in flagList:
+        try:
+            dimensions = flagList[flagList.index("--crop") + 1]
+        except:
+            print(f' ERROR: --crop needs a parameter. "width,height"')
+            print()
+            print(f' `meerkat-pol --help-verbose` to list all valid flags and how to use them.')
+            sys.exit()
+        try:
+            width, height = dimensions.strip().split(",")
+        except:
+            print(f' ERROR: Specify --crop parameter with format "width,height"')
+            print()
+            print(f' `meerkat-pol --help-verbose` to list all valid flags and how to use them.')
+            sys.exit()
+        # TODO: edge case "123pxdeg,123arscecpx" is not sanatized
+        if not ( width.replace("px","").replace("deg","").replace("arcsec","").replace(".","").isdigit() and height.replace("px","").replace("deg","").replace("arcsec","").replace(".","").isdigit() ):
+            print(f' ERROR: Did not recognise format for --crop. Use: "width,height", for instance "512px,512px" or "2deg,2deg" or "120arcsec,120arcsec"')
+            print()
+            print(f' `meerkat-pol --help-verbose` to list all valid flags and how to use them.')
+            sys.exit()
+
+
+
+    configDictList = get_config_dictList()
+    validFlags = []
+    for entry in configDictList:
+        validFlags.append(entry["FLAG"])
+    validFlags += SPECIAL_FLAGS
+    ddFlagList = [ flag for flag in flagList if flag.startswith("--") ]
+    # TODO: better flag parsing
+#    wrongFlags = [ flag for flag in flagList if ( not flag.startswith("--") and flag.startswith("-"))]
+    wrongFlags = list(set(ddFlagList).difference(set(validFlags)))
+    wrongFlags = ", ".join(wrongFlags)
+    if wrongFlags:
+        print(f' ERROR: Flag not recognised: {wrongFlags}')
+        print()
+        print(f' `meerkat-pol --help` to list all valid flags.')
+        sys.exit()
 
 def check_flags(flagList, conf):
     check_if_flag_exists(flagList)
     check_if_inputMS_and_createScrits_come_together(flagList)
+    check_if_crop_has_right_format(flagList)
 
 def print_help_verbose():
     configDictList = get_config_dictList()

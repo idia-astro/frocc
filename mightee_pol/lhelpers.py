@@ -304,6 +304,9 @@ def get_lowest_channelNo_with_data_in_cube(filepathCube):
     with fits.open(filepathCube, memmap=True, mode="update") as hud:
         dataCube = hud[0].data
         maxIdx = hud[0].data.shape[1]
+        if maxIdx == 1:
+            chanNo = 1
+            return chanNo
         for ii in range(0, maxIdx):
             if np.isnan(np.sum(dataCube[0, ii, :, :])) or np.sum(dataCube[0, ii, :, :] == 0):
                 continue

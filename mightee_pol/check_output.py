@@ -99,7 +99,10 @@ def check_final_output_files(conf):
             filePath = os.path.join(conf.input.dirHdf5Output, conf.input.basename + conf.env[outputExt])
         else:
             filePath = conf.input.basename + conf.env[outputExt]
-        if os.path.exists(filePath):
+
+        if os.path.exists(os.path.join(conf.input.dirOutput, filePath)):
+            foundOutputFileList.append(os.path.join(conf.input.dirOutput, filePath))
+        elif os.path.exists(filePath):
             foundOutputFileList.append(filePath)
         else:
             missingOutputFileList.append(filePath)

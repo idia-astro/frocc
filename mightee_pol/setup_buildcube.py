@@ -84,6 +84,8 @@ def get_fields(conf, msIdx):
     TODO: put all the msmd in one fuction so that the object is created only once.
     """
     from casatools import table  # work around sice this script get executed in different environments/containers
+    import casatools
+    print("DEBUG", casatools.__path__)
     info(f"Opening file to read the fields: {conf.input.inputMS[msIdx]}")
     tb = table()
     tb.open(tablename=conf.input.inputMS[msIdx]+"/FIELD")
@@ -200,6 +202,9 @@ def create_directories(conf):
     for directory in list(conf.env.dirList):
         if not os.path.exists(conf.env[directory]):
             os.makedirs(conf.env[directory])
+
+    if not os.path.exists(conf.input.dirOutput) and conf.input.dirOutput:
+        os.makedirs(conf.input.dirOutput)
 
 
 def write_all_sbatch_files(conf):
@@ -392,7 +397,10 @@ def copy_runscripts(conf):
     Copies the runScripts to the local directory
     '''
     for script in conf.input.runScripts:
-        shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
+        try:
+            shutil.copyfile(os.path.join(PATH_PACKAGE, script), script)
+        except shutil.SameFileError:
+            pass
 
 def get_field(fieldListList, conf):
     '''

@@ -4,6 +4,7 @@
 import numpy as np
 import logging
 import csv
+import shutil
 from numpy.polynomial.polynomial import polyfit
 import seaborn as sns
 import matplotlib as mpl
@@ -67,6 +68,12 @@ def write_statistics_file(statsDict, conf):
             freq = round(statsDict["frequency"][i], 4)
             csvData.append([chanNo, freq, rmsI, rmsV, maxI, flagged])
         writer.writerows(csvData)
+    # also copy ior-flagged statistics file in dirOutput
+            # code when Exception occur
+    try:
+        shutil.copyfile(filepathStatistics, os.path.join(conf.input.dirOutput, filepathStatistics))
+    except shutil.SameFileError:
+        pass
 
 # polyom to fit
 def h(x, a, b, c, d):
@@ -242,10 +249,13 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     Flag channels in data cube.
     """
     if mode == "smoothed":
-        cubeName = conf.input.basename + conf.env.extCubeSmoothedFits
+        cubeName = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeSmoothedFits)
     else:
-        cubeName = conf.input.basename + conf.env.extCubeFits
+        cubeName = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeFits)
     info("Flagging channel Number: {0} in {1}".format(chanNoList, cubeName))
+    if conf.input.ignoreStokesVFlagging:
+        info("ignoreStokesVFlagging flag is set! NOT APPLYING FLAGGING TO CHANNELS!")
+        info("Attention: Plots and report will show flagged channels and statistics as if the flagging has been applied.")
     info(SEPERATOR)
     info("Opening data cube: %s", cubeName)
     # TODO: debug: if ignore_missing_end is not true I get an error.
@@ -253,10 +263,11 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     dataCube = hudCube[0].data
 
     info(SEPERATOR)
-    for chanNo in chanNoList:
-        idx = int(chanNo) - 1
-        info(f"Flagging chanNo {chanNo}")
-        dataCube[:, idx, :, :] = np.nan
+    if not conf.input.ignoreStokesVFlagging:
+        for chanNo in chanNoList:
+            idx = int(chanNo) - 1
+            info(f"Flagging chanNo {chanNo}")
+            dataCube[:, idx, :, :] = np.nan
     hudCube.close()
 
     update_CRPIX3(cubeName)
@@ -264,7 +275,7 @@ def flag_chan_in_cube_by_chanNoList(chanNoList, conf, mode="normal"):
     info(SEPERATOR)
     os.environ['OMP_NUM_THREADS'] = str(conf.env.hdf5ConverterMaxCpuCores)
     info(f"Generating HDF5 file from: {cubeName}")
-    hdf5Outputfile = os.path.join(conf.input.dirHdf5Output, cubeName.replace(".fits", '.hdf5'))
+    hdf5Outputfile = os.path.join(conf.input.dirHdf5Output, os.path.basename(cubeName.replace(".fits", '.hdf5')))
     command = " ".join([conf.input.hdf5Converter, "-o", hdf5Outputfile, cubeName])
     run_command_with_logging(command)
 
@@ -300,7 +311,8 @@ def main():
     # TODO: flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf)
     # TODO: make this nicer
     flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf, mode="normal")
-    if os.path.exists(conf.input.basename + conf.env.extCubeSmoothedFits):
+    # TODO maybe try a better if-clause
+    if os.path.exists(os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeSmoothedFits)):
         flag_chan_in_cube_by_chanNoList(outlierChanNoList, conf, mode="smoothed")
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ import random, string
 import os
 import re
 import sys
+import shutil
 import subprocess
 import numpy as np
 import getpass
@@ -83,12 +84,14 @@ def generate_preview_jpg(conf, mode=None):
     '''
     '''
     if mode == "smoothed":
-        filepath = conf.input.basename + conf.env.extCubeAveragemapFits
+        filepath = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeAveragemapFits)
+        print(filepath)
         savePath = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extCubeAveragemapPreviewJpg)
+        print(savePath)
         data, header = fits.getdata(filepath, header=True)
         title = "Preview: Average map for Stokes I, scalar P, Stokes V"
     else:
-        filepath = conf.input.basename + conf.env.extCubeFits
+        filepath = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeFits)
         savePath = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extCubePreviewJpg)
         data, header = fits.getdata(filepath, header=True)
         chanIdxFreqDict = get_lowest_channelIdx_and_freq_with_data_in_cube(filepath)
@@ -100,8 +103,8 @@ def generate_preview_jpg(conf, mode=None):
     refChanIdx = get_lowest_channelNo_with_data_in_cube(filepath) - 1
     imgCount = data.shape[0]
     imSize = data.shape[-1]
-    if imSize >= 1024:
-        downsamplingFactor = imSize//1024
+    if imSize >= 512:
+        downsamplingFactor = imSize//512
     else:
         downsamplingFactor = 1
 
@@ -142,9 +145,11 @@ def write_jinja_reportTemplate(conf):
     timestamp = get_timestamp("%H:%M:%S")
     chanStatsDict = get_cube_channel_statsDict(conf)
     iorPlotFilePath = sorted(glob(os.path.join(conf.env.dirPlots, "*diagnostic-ior*pdf")))[-1]
-    xyPhasePolCorrPlotFilePath = sorted(glob(os.path.join(conf.env.dirPlots, "*diagnostic-xyPhaseCorr-polAngleCorr*pdf")))[-1]
-    print(iorPlotFilePath)
-    print(xyPhasePolCorrPlotFilePath)
+    if conf.input.fileXYphasePolAngleCoeffs:
+        xyPhasePolCorrPlotFilePath = sorted(glob(os.path.join(conf.env.dirPlots, "*diagnostic-xyPhaseCorr-polAngleCorr*pdf")))[-1]
+    else:
+        xyPhasePolCorrPlotFilePath = ""
+
     runtimeDict = get_total_runtime_formated(conf)
 
     s = read_file_as_string(FILEPATH_JINJA_TEMPLATE)
@@ -165,10 +170,15 @@ def write_jinja_reportTemplate(conf):
 
 def create_pdf_from_template(conf):
     fileReportPdfTemplate = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportTemplate)
-    fileReportPdf = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extReportPdf)
+    fileReportPdf = conf.input.basename + conf.env.extReportPdf
     info(f"Generating report pdf...")
     command = f"{conf.env.commandPandoc} {fileReportPdf} {fileReportPdfTemplate}"
     run_command_with_logging(command)
+    # also copy to dirOutput
+    try:
+        shutil.copyfile(fileReportPdf, os.path.join(conf.input.dirOutput, os.path.basename(fileReportPdf)))
+    except shutil.SameFileError:
+        pass
 
 def create_md_from_template(conf):
     filePathReportPdfTemplate = os.path.join(conf.env.dirReport, conf.input.basename + conf.env.extReportTemplate)
@@ -258,7 +268,7 @@ def get_total_runtime_formated(conf):
 
 
 def generate_max_stokesI_plot(conf):
-    tabfile = conf.input.basename + conf.env.extCubeIORStatistics
+    tabfile = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeIORStatistics)
     statsDict = get_dict_from_tabFile(tabfile)
     xData = statsDict['chanNo']
     x2Data = np.array(statsDict['frequency']) /1000  # convert to GHz
@@ -337,7 +347,7 @@ def get_cube_channel_statsDict(conf):
     '''
     dataDict = {}
     dataDict['predicted'] = len([item for sublist in conf.data.predictedOutputChannels for item in sublist])
-    tabfile = conf.input.basename + conf.env.extCubeIORStatistics
+    tabfile = os.path.join(conf.input.dirOutput, conf.input.basename + conf.env.extCubeIORStatistics)
     statsDict = get_dict_from_tabFile(tabfile)
     dataDict['total'] = len(statsDict['chanNo'])
     iorflaggedCount = 0
