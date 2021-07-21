@@ -43,14 +43,15 @@ field = ""
 # deviates from this value slightly in order to match the data within a spw.
 # TYPE: float or str
 # EXAMPLE: 2.5e6
-outputChanBandwidth = 2.5e6
+outputChanBandwidth = 3e6
 
 # DESCRIPTION: The observation ID of the MS.
 # TYPE: int or str
 # EXAMPLE: 0 or "" for all observations
 observation = ""
 
-# DESCRIPTION: File for the XY-phase and polarisation angle corrections.
+# DESCRIPTION: File for the XY-phase and polarisation angle corrections. 
+# coefficient units must be given in [GHz]
 # TYPE: str (path to coefficient file)
 # EXAMPLE: "coefficients.txt" TODO give example of file format.
 fileXYphasePolAngleCoeffs = ""
@@ -62,7 +63,7 @@ fileXYphasePolAngleCoeffs = ""
 # DESCRIPTION: The CASA `split` datacolumn.
 # https://casa.nrao.edu/docs/TaskRef/split-task.html
 # TYPE: str
-datacolumn = 'data'
+datacolumn = 'corrected'
 
 
 # =============================================================================
@@ -184,13 +185,13 @@ hdf5Converter = "/carta_share/hdf_convert/run_hdf_converter"
 # TYPE: str
 dirHdf5Output = ""
 
-# DESCRIPTION: Scripts to run. Also used for sbatch dependency, therfore list
+# DESCRIPTION: Scripts to run. Also used for sbatch dependency, therefore list
 # order matters!
 # TYPE: list(str)
 runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
 
 # DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
-# job-name, cpus-per-task may be overwirtten by the pipline
+# job-name, cpus-per-task may be overwritten by the pipline
 # TYPE: dict
 slurmDefaultHeader = {'array': '1-30%30', 'nodes': 1, 'ntasks-per-node': 1,'cpus-per-task': 4, 'mem': "29GB", 'job-name': "NoName", 'output': '/logs/NoName-%A-%a.out', 'error': '/logs/NoName-%A-%a.err', 'partition': "Main", 'time': "16:00:00", 'account': "b03-idia-ag"}
 
@@ -204,18 +205,30 @@ email = ""
 dirWorking = ""
 
 # DESCRIPTION: Output directory for the output files. This directory will be
-# created if it does not exists. Carful with relative paths; everything will be
+# created if it does not exists. Careful with relative paths; everything will be
 # relative as seen from the working directory.
 # TYPE: str
 dirOutput = ""
 
-# DESCRIPTION: Deletes temporary directories after a sucessfull run. A sucessfull
-# run is determent by whether the exspected hdf5 output files exists (TODO:
+# DESCRIPTION: Deletes temporary directories after a successful run. A successful
+# run is determent by whether the expected hdf5 output files exists (TODO:
 # implement better indicator).
 # --cleanup 0 keeps all temporary files, --cleanup 1 deletes the $dirVis
 # directory, --cleanup 2 deletes $dirVis and $dirImages directories.
 # TYPE: int
-cleanup = 2
+cleanup = 1
+
+# DESCRIPTION: Crops the data cube image dimensions to "height,width". Units can
+# be specified by "512,512" or "512px,512px" for pixels, "2deg,2deg" for degree,
+# "120arcsec,120arcsec" for arcseconds and empty string "" for no cropping.
+# Decimal places are rounded to the lower integer.
+# TYPE: str
+crop = ""
+
+# DESCRIPTION: Does not apply the iterative outlier rejection on the cube.
+# ATTENTION: Plots and report will be generated as if the flagging has been applied
+# TYPE: bool
+ignoreStokesVFlagging = False
 
 # DESCRIPTION: TODO: Default meerkat-pol configuration file.
 # TYPE: str
