@@ -90,6 +90,7 @@ def call_tclean(channelInputMS, channelNumber, conf):
         wprojplanes=conf.input.wprojplanes,
         specmode=conf.input.specmode,
         spw=conf.input.spw,
+        uvrange=conf.input.uvrange,
         stokes=conf.input.stokes,
         weighting=conf.input.weighting,
         robust=conf.input.robust,

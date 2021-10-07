@@ -1,7 +1,7 @@
 {% raw %}
 ---
 # http://pandoc.org/
-title: "Report `meerkat-pol`"
+title: "Report `frocc`"
 author: IDIA pipeline
 date: \today\space{% endraw %}-- {{timestamp}} {% raw %}
 geometry: "left=2.3cm,right=2.3cm,top=1.8cm,bottom=1.8cm"
@@ -37,7 +37,7 @@ header-includes:
     - \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},numbers=left}
     - \usepackage{lastpage}
     - \usepackage{fancyhdr}
-{% endraw %}    - \fancyhead[L]{\texttt{meerkat-pol}\text{:} {{ conf.input.basename }} }{% raw %}
+{% endraw %}    - \fancyhead[L]{\texttt{frocc}\text{:} {{ conf.input.basename }} }{% raw %}
     - \fancyhead[R]{}
     - \fancyfoot[L]{\today\space -- \thistime}
     - \fancyfoot[C]{}
@@ -52,7 +52,7 @@ header-includes:
 
 Summary
 =======
-The `meerkat-pol` cube pipeline finished successfully for cube:
+The `frocc` cube pipeline finished successfully for cube:
 **{{ conf.input.basename }}** . For the frequency ranges 
 **{{ conf.input.freqRanges | join('`, `') }} MHz**
 at a channel width
@@ -80,7 +80,7 @@ Corresponding file: {{ conf.input.basename + conf.env.extCubeSmoothedFits}}]({{ 
 
 Pipeline output files
 =====================
-This is the output second half of the command `meerkat-pol --status`. It shows
+This is the output second half of the command `frocc --status`. It shows
 which of the output files were created successfully and which failed.
 
 ~~~~{.numberLines}
@@ -113,7 +113,7 @@ The corrections are done via a second order fit with coefficients provided by
 
 Input parameter
 ===============
-This is the list of all user input parameters for this run of `meerkat-pol`.
+This is the list of all user input parameters for this run of `frocc`.
 
 ~~~~{.numberLines}{%for key, value in conf.input.items()%}
 {% if value == "" %}{{ key }} = "" {% else %}{{ key }} = {{ value }}{% endif %}{%endfor%}
@@ -132,7 +132,7 @@ It shows observation details for input measurement sets.
 
 Runtime
 =======
-The `meerkat-pol` cube pipeline ran in {{ runtimeDict['humanAuto'] }} in wall time. The accumulated time on
+The `frocc` cube pipeline ran in {{ runtimeDict['humanAuto'] }} in wall time. The accumulated time on
 all computer nodes is {{ runtimeDict['totalAuto'] }}. The following script are executed in sequential order:
 `{{ conf.input.runScripts | join('`, `') }}`. Multiple instances of the same script
 may be spawned in parallel.

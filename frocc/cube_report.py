@@ -51,12 +51,12 @@ def send_email_via_api(conf, failed=False):
     email = conf.input.email
     username = getpass.getuser().capitalize()
     if failed:
-        subject = f"[ meerkat-pol ] Failed cube {conf.input.basename}"
-        oneLineStatus = "the cube creation has failed. You can have  look below and run `meerkat-pol --status` within the working directory to to get a better idea of what went wrong."
+        subject = f"[ frocc ] Failed cube {conf.input.basename}"
+        oneLineStatus = "the cube creation has failed. You can have  look below and run `frocc --status` within the working directory to to get a better idea of what went wrong."
     else:
-        subject = f"[ meerkat-pol ] New cube {conf.input.basename}"
+        subject = f"[ frocc ] New cube {conf.input.basename}"
         oneLineStatus = "the cube creation finished successfully."
-    status = get_meerkatpol_check_output(conf)
+    status = get_frocc_check_output(conf)
     body = f'Hi {username},\n\n{oneLineStatus}\n\n```\n{status}\n```\n\nLieben Gruß,\nLennart\'s IDIA API'
 
     info(f"Sending report to {conf.input.email}")
@@ -129,7 +129,7 @@ def generate_preview_jpg(conf, mode=None):
     info(f"Saving: {savePath}")
     fList[-1].save(savePath, adjust_bbox='tight')
 
-def get_meerkatpol_check_output(conf):
+def get_frocc_check_output(conf):
     result = StringIO()
     sys.stdout = result
     print(SEPERATOR)
@@ -140,7 +140,7 @@ def get_meerkatpol_check_output(conf):
 
 def write_jinja_reportTemplate(conf):
     #old_stdout = sys.stdout
-    status = get_meerkatpol_check_output(conf)
+    status = get_frocc_check_output(conf)
     listobsOutputList = [ read_file_as_string(s) for s in write_listobs_for_inputMS_and_get_filenames(conf) ]
     timestamp = get_timestamp("%H:%M:%S")
     chanStatsDict = get_cube_channel_statsDict(conf)
@@ -315,7 +315,7 @@ def generate_plot_runtimes(conf):
     dataDict = get_times_listDict(conf)
 
     fig, ax1 = plt.subplots(figsize=(8,10))
-    ax1.set_title(f'Runtime meerkat-pol: On single node {runtimeDict["totalAuto"]}, {runtimeDict["humanAuto"]} wall time')
+    ax1.set_title(f'Runtime frocc: On single node {runtimeDict["totalAuto"]}, {runtimeDict["humanAuto"]} wall time')
     ax1.set_xlabel(r'Runtime [hours]')#,fontsize=22)
     ax1.set_ylabel(r'Slurm job count')#,fontsize=22)
     ax1.grid(b=True, which='major', linestyle='dashed')

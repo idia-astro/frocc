@@ -10,7 +10,7 @@ from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from mightee_pol.logger import *
 
 def print_header():
-    headline = " [ meerkat-pol --status ] "
+    headline = " [ frocc --status ] "
     decorationsLength = int(len(SEPERATOR_HEAVY)/2. - len(headline)/2.)
     header = SEPERATOR_HEAVY[:decorationsLength] + headline + SEPERATOR_HEAVY
     header = header[:len(SEPERATOR_HEAVY)]
@@ -44,14 +44,14 @@ def print_slurm_status(statusList, conf):
 def print_status():
     print_header()
     conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
-    #check if config in current directory and if meerkat --start has been run
+    #check if config in current directory and if frocc --start has been run
     if not ( os.path.exists(FILEPATH_CONFIG_TEMPLATE) and os.path.exists(FILEPATH_CONFIG_USER)):
         print(f"ERROR: Could not find `{FILEPATH_CONFIG_TEMPLATE}` and/or `{FILEPATH_CONFIG_USER}`")
         print(f"Is this the right working directory?")
         sys.exit()
     if not  conf.data.slurmIDList:
         print(f"ERROR: No started slurm jobs found.")
-        print(f"Did you already run `meerkat-pol --start` in this directory?")
+        print(f"Did you already run `frocc --start` in this directory?")
         sys.exit()
     statusList = get_statusList(conf)
     print(SEPERATOR)

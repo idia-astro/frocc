@@ -133,6 +133,12 @@ spw = ""
 # DESCRIPTION:
 # https://casa.nrao.edu/docs/TaskRef/tclean-task.html
 # TYPE: str
+uvrange = ""
+
+
+# DESCRIPTION:
+# https://casa.nrao.edu/docs/TaskRef/tclean-task.html
+# TYPE: str
 stokes = "IQUV"
 
 # DESCRIPTION:

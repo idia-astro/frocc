@@ -44,7 +44,7 @@ import numpy as np
 #9:03
 #You can access it by tb.open('msname::SPECTRAL_WINDOW')
 #9:04
-#and then tb.colnames() will tell you the list of columns in that table, and tb.getcol('chan_freqs') will give you a list of channel frequencies`meerkat --createScripts --copyScripts`
+#and then tb.colnames() will tell you the list of columns in that table, and tb.getcol('chan_freqs') will give you a list of channel frequencies`frocc --createScripts --copyScripts`
 
 def get_all_freqsList_tmp(conf, msIdx):
     """

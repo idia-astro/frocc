@@ -10,40 +10,40 @@ import os
 -------------------------------------------------------------------------------
 '''
 USAGE='''
- meerkat-pol Usage
+ frocc Usage
  ==================
  
  1. Usage
  --------
- 1. `meerkat-pol --createConfig --inputMS <path to input.ms>`
- 2. `meerkat-pol --createScripts [--copyScripts]
- 3. `meerkat-pol --start`
+ 1. `frocc --createConfig --inputMS <path to input.ms>`
+ 2. `frocc --createScripts [--copyScripts]
+ 3. `frocc --start`
  
  2. In one command
  -----------------
- `meerkat-pol --createConfig --inputMS <path to input.ms> --createScripts --start`
+ `frocc --createConfig --inputMS <path to input.ms> --createScripts --start`
  
  3. More advanced
  ----------------
- `meerkat-pol --inputMS "/my/data/input1.ms, /my/data/input2.mms" --freqRanges '["900-1000", "1300-1500", "1600-1650"]' --imsize 1024 --niter 500 --threshold 0.0001 --smoothbeam 15arcsec --createConfig --createScripts --start`
+ `frocc --inputMS "/my/data/input1.ms, /my/data/input2.mms" --freqRanges '["900-1000", "1300-1500", "1600-1650"]' --imsize 1024 --niter 500 --threshold 0.0001 --smoothbeam 15arcsec --createConfig --createScripts --start`
 
  4. Show the status
  ------------------
- meerkat-pol --status
+ frocc --status
 
  5. Canel slurm jobs
  -------------------
- meerkat-pol --cancel
+ frocc --cancel
 
  6. Further help
  ---------------
- meerkat-pol --readme
- meerkat-pol --help
- meerkat-pol --help-verbose
+ frocc --readme
+ frocc --help
+ frocc --help-verbose
 '''
 
 README='''
- meerkat-pol Readme
+ frocc Readme
  ==================
  
  1. Installation
@@ -61,7 +61,7 @@ README='''
  2. Implementation
  -----------------
  
- `meerkat-pol` takes input measurement set (ms) data and parameters to create
+ `frocc` takes input measurement set (ms) data and parameters to create
  channelized data cube in Stokes IQUV.  
  First CASA `split` is run to split out visibilities from the input ms into
  visibilities of the aimed resolution in frequency. Then `tclean` runs on each
@@ -77,31 +77,31 @@ README='''
  
  The input of parameters and setting can be controlled via 3 methods:
  
- 1. Command line argument: `meerkat-pol --inputMS "myData.ms"`
- After calling `meerkat-pol` with `--createConfig` all settings are written to
- `meerkat-pol_default_config.txt`. (All valid flags can be found in
- `.meerkat-pol_default_config.template` under the `[input]` section).
+ 1. Command line argument: `frocc --inputMS "myData.ms"`
+ After calling `frocc` with `--createConfig` all settings are written to
+ `frocc_default_config.txt`. (All valid flags can be found in
+ `.frocc_default_config.template` under the `[input]` section).
  
- 2. Standard configuration file: `meerkat-pol_default_config.txt`
- After creating `meerkat-pol_default_config.txt` via `meerkat-pol ... ...
+ 2. Standard configuration file: `frocc_default_config.txt`
+ After creating `frocc_default_config.txt` via `frocc ... ...
  --createConfig`  it can be revised. All parameters in here overwrite the ones
- in `.meerkat-pol_default_config.template`. Do not change anything under the
+ in `.frocc_default_config.template`. Do not change anything under the
  section `[data]`.
  
- 3. Fallback configuration file: `.meerkat-pol_default_config.template
+ 3. Fallback configuration file: `.frocc_default_config.template
  The pipeline falls back to the values in this file if they have not been
  specified via one of the previous way. It is also a place where one can lookup
- explanations for valid flags for `meerkat-pol`. It also includes the section
+ explanations for valid flags for `frocc`. It also includes the section
  `[env]` which can not be controlled via command line flags.
  
  ------------------------------------------------------------------------------
  
- When calling `meerkat-pol --createScripts` `meerkat-pol_default_config.txt` and
- `.meerkat-pol_default_config.template` are read and the slurm files are created
+ When calling `frocc --createScripts` `frocc_default_config.txt` and
+ `.frocc_default_config.template` are read and the slurm files are created
  in the current directory. The script also tries to calculate the optimal
  number of slurm taks depending on the input ms spw coverage.
  
- The last step `meerkat-pol --start` submits the slurm files in a dependency
+ The last step `frocc --start` submits the slurm files in a dependency
  chain. Caution: CASA does not always seem to report back its failure state in
  a correct way. Therefore, the slurm flag `--dependency=afterany:...` is
  chosen, which starts the next job in the chain even if the previous one has
@@ -172,7 +172,7 @@ def check_if_flag_exists(flagList):
     if wrongFlags:
         print(f' ERROR: Flag not recognised: {wrongFlags}')
         print()
-        print(f' `meerkat-pol --help` to list all valid flags.')
+        print(f' `frocc --help` to list all valid flags.')
         sys.exit()
 
 
@@ -186,7 +186,7 @@ def check_if_inputMS_and_createScrits_come_together(flagList):
     if bool("--inputMS" in flagList) ^ bool("--createConfig" in flagList):
         print(f' ERROR: --inputMS <inputFile> and --createConfig must be used together.')
         print()
-        print(f' `meerkat-pol --help` to list all valid flags.')
+        print(f' `frocc --help` to list all valid flags.')
         sys.exit()
     
 def check_if_crop_has_right_format(flagList):
@@ -199,20 +199,20 @@ def check_if_crop_has_right_format(flagList):
         except:
             print(f' ERROR: --crop needs a parameter. "width,height"')
             print()
-            print(f' `meerkat-pol --help-verbose` to list all valid flags and how to use them.')
+            print(f' `frocc --help-verbose` to list all valid flags and how to use them.')
             sys.exit()
         try:
             width, height = dimensions.strip().split(",")
         except:
             print(f' ERROR: Specify --crop parameter with format "width,height"')
             print()
-            print(f' `meerkat-pol --help-verbose` to list all valid flags and how to use them.')
+            print(f' `frocc --help-verbose` to list all valid flags and how to use them.')
             sys.exit()
         # TODO: edge case "123pxdeg,123arscecpx" is not sanatized
         if not ( width.replace("px","").replace("deg","").replace("arcsec","").replace(".","").isdigit() and height.replace("px","").replace("deg","").replace("arcsec","").replace(".","").isdigit() ):
             print(f' ERROR: Did not recognise format for --crop. Use: "width,height", for instance "512px,512px" or "2deg,2deg" or "120arcsec,120arcsec"')
             print()
-            print(f' `meerkat-pol --help-verbose` to list all valid flags and how to use them.')
+            print(f' `frocc --help-verbose` to list all valid flags and how to use them.')
             sys.exit()
 
 
@@ -230,7 +230,7 @@ def check_if_crop_has_right_format(flagList):
     if wrongFlags:
         print(f' ERROR: Flag not recognised: {wrongFlags}')
         print()
-        print(f' `meerkat-pol --help` to list all valid flags.')
+        print(f' `frocc --help` to list all valid flags.')
         sys.exit()
 
 def check_flags(flagList, conf):
@@ -240,7 +240,7 @@ def check_flags(flagList, conf):
 
 def print_help_verbose():
     configDictList = get_config_dictList()
-    print("meerkat-pol --help-verbose")
+    print("frocc --help-verbose")
     for entry in configDictList:
         # get padding depending on key length
         keyLength = 0
@@ -256,14 +256,14 @@ def print_help_verbose():
                 print(line)
         print()
     print(" For more usage support please read the output of:")
-    print("  meerkat-pol --usage")
-    print("  meerkat-pol --help")
-    print("  meerkat-pol --readme")
+    print("  frocc --usage")
+    print("  frocc --help")
+    print("  frocc --readme")
 
 
 def print_help():
     configDictList = get_config_dictList()
-    print("meerkat-pol --help")
+    print("frocc --help")
     # get padding depending on key length
     paddingLength = 0
     for entry in configDictList:
@@ -278,9 +278,9 @@ def print_help():
                 print(line)
     print()
     print(" For more usage support please read the output of:")
-    print("  meerkat-pol --usage")
-    print("  meerkat-pol --help-verbose")
-    print("  meerkat-pol --readme")
+    print("  frocc --usage")
+    print("  frocc --help-verbose")
+    print("  frocc --readme")
 
 def print_usage():
     print(USAGE)

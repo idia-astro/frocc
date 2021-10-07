@@ -243,7 +243,7 @@ def get_optimal_taskNo_cpu_mem(conf):
     '''
     Tries to return an optimal resource profile (mainly for t-clean) derived
     from the image size. At the moment only a naive implementation is done.
-    Scaling linear: 500px to 7500px. Have a look into .meerkat-pol_default_config.template
+    Scaling linear: 500px to 7500px. Have a look into .frocc_default_config.template
     '''
     def linear_fit(m, x, b):
         return m * x + b
