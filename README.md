@@ -34,8 +34,8 @@ frocc Readme
 `source /users/lennart/software/sourcePipeline-stable.sh`
 
 ### Via pip (experimental):
-1. `git clone git@github.com:idia-astro/mightee-pol.git`
-2. `cd mightee-pol`
+1. `git clone git@github.com:idia-astro/frocc.git`
+2. `cd frocc`
 3. `pip install --user .`
 
 
