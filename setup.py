@@ -9,14 +9,14 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="mightee-pol",  # Replace with your own username
+    name="frocc",  # Replace with your own username
     version="0.0.1",
     author="Lennart Heino",
     author_email="author@example.com",
-    description="Cube generation pipeline for MIGHTEE polarimetry",
+    description="Fast RadiO Cube Creation",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/idia-astro/mightee-pol",
+    url="https://github.com/idia-astro/frocc",
     include_package_data=True,
     packages=setuptools.find_packages(),
     classifiers=[
@@ -27,8 +27,8 @@ setuptools.setup(
     python_requires='>=3.6',
     entry_points={
         "console_scripts": [
-            "meerkat-pol = mightee_pol.setup_buildcube_wrapper:main",
-            "setup_buildcube = mightee_pol.setup_buildcube:main",
+            "forcc = frocc.setup_buildcube_wrapper:main",
+            "setup_buildcube = frocc.setup_buildcube:main",
 #            "setup_buildcube = setup_buildcube.sh",
         ],
     },
