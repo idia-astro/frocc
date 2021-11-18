@@ -5,15 +5,16 @@ channels:
 - defaults
 - pkgw-forge
 dependencies:
+- python=3.6
 - pip
 - numpy
 - scipy
 - matplotlib
-- casatools
-- casatasks
+- casa-tools
 - seaborn
 - click
 - pandas
 - jinja2
 - pip:
+  - casatasks
   - -rrequirements.txt
