@@ -23,12 +23,12 @@ os.environ['LANG'] = "C-UTF-8"
 import click
 import subprocess
 from os.path import expanduser
-from mightee_pol.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
-from mightee_pol.check_input import check_all, print_usage, print_help, print_help_verbose, print_readme
-from mightee_pol.check_status import print_status
-from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_CONFIG_USER, FILEPATH_CONFIG_TEMPLATE
-from mightee_pol.logger import *
-from mightee_pol.setup_buildcube import write_all_sbatch_files, copy_runscripts
+from frocc.lhelpers import main_timer, get_config_in_dot_notation, print_starting_banner
+from frocc.check_input import check_all, print_usage, print_help, print_help_verbose, print_readme
+from frocc.check_status import print_status
+from frocc.config import SPECIAL_FLAGS, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_CONFIG_USER, FILEPATH_CONFIG_TEMPLATE
+from frocc.logger import *
+from frocc.setup_buildcube import write_all_sbatch_files, copy_runscripts
 
 
 # TODO: put this in default_config.* at a later stage
@@ -84,12 +84,12 @@ def main(ctx):
             os.makedirs(workingDir)
         os.chdir(workingDir)
     if "--createConfig" in ctx.args:
-        print_starting_banner("MEERKAT-POL --createConfig")
+        print_starting_banner("frocc --createConfig")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
         ctx.args.remove("--createConfig")
 
     if "--createScripts" in ctx.args:
-        print_starting_banner("MEERKAT-POL --createScripts")
+        print_starting_banner("frocc --createScripts")
         # if [data] scrtion doesnent exists start the container, else give warning and write scripts
         conf = get_config_in_dot_notation(templateFilename=FILEPATH_CONFIG_TEMPLATE, configFilename=FILEPATH_CONFIG_USER)
         print("!!!!!!!!")
@@ -109,13 +109,13 @@ def main(ctx):
         write_all_sbatch_files(conf)
         ctx.args.remove("--createScripts")
     if "--start" in ctx.args:
-        print_starting_banner("MEERKAT-POL --start")
+        print_starting_banner("frocc --start")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
         time.sleep(5)
         print()
         print_status()
     if "--cancel" in ctx.args or "--kill" in ctx.args:
-        print_starting_banner("MEERKAT-POL --cancel")
+        print_starting_banner("frocc --cancel")
         subprocess.run(conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args)
 
 if __name__=="__main__":

@@ -34,9 +34,9 @@ import click
 import numpy as np
 from astropy.io import fits
 
-from mightee_pol.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header
-from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from mightee_pol.logger import *
+from frocc.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header
+from frocc.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from frocc.logger import *
 
 
 

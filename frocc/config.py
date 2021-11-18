@@ -1,10 +1,10 @@
 import os
-import mightee_pol
+import frocc
 
 
 FORMAT_LOGS_TIMESTAMP = "%Y-%m-%d %H:%M:%S,%f"
 
-PATH_PACKAGE = list(mightee_pol.__path__)[0]  # helper
+PATH_PACKAGE = list(frocc.__path__)[0]  # helper
 FILEPATH_JINJA_TEMPLATE = os.path.join(PATH_PACKAGE, "report.template.jinja")
 
 FILEPATH_CONFIG_USER = "frocc_default_config.txt"
