@@ -1,8 +1,6 @@
 name: frocc
 channels:
-- astropy
 - conda-forge
-- defaults
 - pkgw-forge
 dependencies:
 - python=3.6
