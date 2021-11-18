@@ -17,12 +17,12 @@ frocc Usage
 
 5. Canel slurm jobs
 -------------------
-merkat-pol --cancel
+`frocc --cancel`
 
 5. Further help
 ---------------
-merkat-pol --readme
-merkat-pol --help
+`frocc --readme`
+`frocc --help`
 
 frocc Readme
 ==================
@@ -38,11 +38,15 @@ frocc Readme
 2. `cd frocc`
 3. `pip install --user .`
 
+### Via conda:
+1. `git clone git@github.com:idia-astro/frocc.git`
+2. `cd frocc`
+3. `conda env create`
 
 2. Implementation
 -----------------
 
-`merkat-pol` takes input measurement set (ms) data and parameters to create
+`frocc` takes input measurement set (ms) data and parameters to create
 channelized data cube in Stokes IQUV.  
 First CASA `split` is run to split out visibilities from the input ms into
 visibilities of the aimed resolution in frequency. Then `tclean` runs on each
