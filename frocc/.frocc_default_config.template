@@ -257,8 +257,8 @@ dirList = ["dirLogs", "dirImages", "dirVis", "dirPlots", "dirReport"]
 # string marker for channel files
 markerChannel = ".chan"
 
-
-prefixSingularity = "singularity exec /users/lennart/container/frocc.simg"
+prefixSingularity = ""
+#prefixSingularity = "singularity exec /users/lennart/container/frocc.simg"
 #prefixSingularity = "singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 
 # The container and headnode have different python3 paths, hence the python3 $HOME...
