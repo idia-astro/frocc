@@ -33,19 +33,18 @@ from frocc.setup_buildcube import write_all_sbatch_files, copy_runscripts
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun -N 1 --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 2 --time 00:30:00 --pty"
+PREFIX_SRUN = "srun -N 1 --export=ALL --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 2 --time 00:30:00 --pty"
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 #COMMAND = "setup_buildcube"
 
 PATH_HOME = expanduser("~") + "/"
 
-PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/opt/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/opt/slurm/bin:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/bin:/idia/software/pipelines/jordan-dev/processMeerKAT/:{PATH_HOME}.fzf/bin:/users/lennart/software"
-
-PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/"
-
-os.environ['PATH'] = ":".join([os.environ.get('PATH'), PATH_QUICKFIX])
-os.environ['PYTHONPATH'] = ":".join([os.environ.get('PYTHONPATH'), PYTHONPATH_QUICKFIX])
+# A Thomson: Commenting out hard-coded paths.
+# PATH_QUICKFIX = f"{PATH_HOME}/bin:{PATH_HOME}.local/bin:{PATH_HOME}local/bin:/opt/anaconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/opt/slurm/bin:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/bin:/idia/software/pipelines/jordan-dev/processMeerKAT/:{PATH_HOME}.fzf/bin:/users/lennart/software"
+# PYTHONPATH_QUICKFIX = f"{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}.local/lib/python3.7/site-packages/:/idia/software/pipelines/jordan-dev/processMeerKAT:{PATH_HOME}python-tools:/idia/software/pipelines/jordan-dev/processMeerKAT/"
+# os.environ['PATH'] = ":".join([os.environ.get('PATH'), PATH_QUICKFIX])
+# os.environ['PYTHONPATH'] = ":".join([os.environ.get('PYTHONPATH'), PYTHONPATH_QUICKFIX])
 
 
 @click.command(context_settings=dict(
@@ -95,9 +94,10 @@ def main(ctx):
         print("!!!!!!!!")
         if not conf.data:
             commandList = PREFIX_SRUN.split(" ") + conf.env.prefixSingularity.split(" ") + conf.env.commandSingularity.replace("${HOME}", PATH_HOME).split(" ") + ctx.args
+            commandList = [i for i in commandList if i]
             print(commandList)
             logger.info(f"Command: {' '.join(commandList)}")
-            subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": os.environ["PATH"], "PATH": os.environ["PATH"], "PYTHONPATH": os.environ["PYTHONPATH"]})
+            subprocess.run(commandList, env={"SINGULARITYENV_APPEND_PATH": os.environ["PATH"], "PATH": os.environ["PATH"], "PYTHONPATH": os.environ["PYTHONPATH"], "HOME": os.environ["HOME"]})
         else:
             warning(f"Found [data] section in {FILEPATH_CONFIG_USER}. Using those values! To re-calculate them delete the [data] section and re-run `--createScripts`.")
 
