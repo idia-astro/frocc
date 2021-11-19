@@ -4,6 +4,7 @@ channels:
 - pkgw-forge
 dependencies:
 - python=3.6
+- astropy
 - pip
 - numpy
 - scipy
