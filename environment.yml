@@ -16,4 +16,5 @@ dependencies:
 - jinja2
 - pip:
   - casatasks
+  - requests
   - -rrequirements.txt
