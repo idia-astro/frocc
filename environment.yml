@@ -3,7 +3,7 @@ channels:
 - conda-forge
 - pkgw-forge
 dependencies:
-- python=3.6
+- python=3.8
 - astropy
 - pip
 - numpy
@@ -14,6 +14,7 @@ dependencies:
 - click
 - pandas
 - jinja2
+- pandoc
 - pip:
   - casatasks
   - requests
