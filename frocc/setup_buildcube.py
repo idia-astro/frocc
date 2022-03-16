@@ -10,12 +10,12 @@ import shutil
 import re
 import subprocess
 import configparser
-from mightee_pol.logger import *
+from frocc.logger import *
 
 # own helpers
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR, run_command_with_logging
-from mightee_pol.config import SPECIAL_FLAGS, FILEPATH_CONFIG_USER, PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_LOG_TIMER
-import mightee_pol
+from frocc.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR, run_command_with_logging
+from frocc.config import SPECIAL_FLAGS, FILEPATH_CONFIG_USER, PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_TEMPLATE_ORIGINAL, FILEPATH_LOG_PIPELINE, FILEPATH_LOG_TIMER
+import frocc
 
 os.environ['LC_ALL'] = "C.UTF-8"
 os.environ['LANG'] = "C.UTF-8"
@@ -140,7 +140,7 @@ def write_user_config_input(args):
     '''
 
     info(f"Writing user input to config file: {FILEPATH_CONFIG_USER}")
-    configString = "# This is the configuration file to initialise the mightee_pol cube generation.\n"
+    configString = "# This is the configuration file to initialise the frocc cube generation.\n"
     configString += "# Please change the parameters accordingly.\n\n"
     configString += f"# Default values are read from the template file {FILEPATH_CONFIG_TEMPLATE}.\n"
     configString += "# Parameters from the template file can be used in this file you are editing\n"

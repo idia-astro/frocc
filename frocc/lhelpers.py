@@ -14,12 +14,12 @@ import inspect
 import subprocess
 import sys
 from astropy.io import fits
-#from mightee_pol.logger import info, debug, error, warning
+#from frocc.logger import info, debug, error, warning
 
 #import logging
 #from logging import info, debug, error, warning
-from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
-from mightee_pol.logger import *
+from frocc.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from frocc.logger import *
 
 #logging.basicConfig(
 #    format="%(asctime)s\t[ %(levelname)s ]\t%(message)s", level=logging.INFO

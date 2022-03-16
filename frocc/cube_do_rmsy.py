@@ -6,8 +6,8 @@ import numpy as np
 import json
 
 from glob import glob
-from mightee_pol.lhelpers import get_config_in_dot_notation, main_timer
-from mightee_pol.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
+from frocc.lhelpers import get_config_in_dot_notation, main_timer
+from frocc.config import FILEPATH_CONFIG_TEMPLATE, FILEPATH_CONFIG_USER
 from logging import info, error
 
 from RMtools_1D.do_RMsynth_1D import run_rmsynth

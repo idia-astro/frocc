@@ -2,9 +2,6 @@
 import setuptools
 import sys
 
-# not working
-sys.executable = "/usr/bin/env python3"
-
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -27,7 +24,7 @@ setuptools.setup(
     python_requires='>=3.6',
     entry_points={
         "console_scripts": [
-            "forcc = frocc.setup_buildcube_wrapper:main",
+            "frocc = frocc.setup_buildcube_wrapper:main",
             "setup_buildcube = frocc.setup_buildcube:main",
 #            "setup_buildcube = setup_buildcube.sh",
         ],

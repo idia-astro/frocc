@@ -2,7 +2,7 @@
 Still in development
 Make sure all of the slurm commands get catched.
 '''
-#from mightee_pol.setup_buildcube import FILEPATH_LOG_PIPELINE
+#from frocc.setup_buildcube import FILEPATH_LOG_PIPELINE
 import logging
 
 # TODO, hardcoded because of dependecy circle. Fix this

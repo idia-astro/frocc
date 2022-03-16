@@ -1,0 +1,21 @@
+name: frocc
+channels:
+- conda-forge
+- pkgw-forge
+dependencies:
+- python=3.8
+- astropy
+- pip
+- numpy
+- scipy
+- matplotlib
+- casa-tools
+- seaborn
+- click
+- pandas
+- jinja2
+- pandoc
+- pip:
+  - casatasks
+  - requests
+  - -rrequirements.txt

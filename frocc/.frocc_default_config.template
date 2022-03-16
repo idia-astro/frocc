@@ -5,8 +5,8 @@
 #
 # This file serves as config file for sane defaults for the MeerKAT MIGHTEE 
 # polarisation pipeline. The values in this file should not be edited. Instead
-# every value can be overwritten in `meerkat-pol_default_config.txt` (after
-# creating it via `meerkat-pol --createConfig --inputMS <path to input.ms>`).
+# every value can be overwritten in `frocc_default_config.txt` (after
+# creating it via `frocc --createConfig --inputMS <path to input.ms>`).
 # Don't forget to also copy the corrosponding sections like [input] when
 # overwriting.
 #
@@ -236,9 +236,9 @@ crop = ""
 # TYPE: bool
 ignoreStokesVFlagging = False
 
-# DESCRIPTION: TODO: Default meerkat-pol configuration file.
+# DESCRIPTION: TODO: Default frocc configuration file.
 # TYPE: str
-# configFile = "meerkat-pol_default_config.txt"
+# configFile = "frocc_default_config.txt"
 
 # =============================================================================
 # Pipeline and program environment specific parameters
@@ -257,8 +257,8 @@ dirList = ["dirLogs", "dirImages", "dirVis", "dirPlots", "dirReport"]
 # string marker for channel files
 markerChannel = ".chan"
 
-
-prefixSingularity = "singularity exec /users/lennart/container/meerkat-pol.simg"
+prefixSingularity = ""
+#prefixSingularity = "singularity exec /users/lennart/container/frocc.simg"
 #prefixSingularity = "singularity exec /users/krishna/ceph/casa-stable-lennart.simg"
 
 # The container and headnode have different python3 paths, hence the python3 $HOME...

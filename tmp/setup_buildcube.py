@@ -15,8 +15,8 @@ import subprocess
 from logging import info, error, warning
 
 # own helpers
-from mightee_pol.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
-import mightee_pol
+from frocc.lhelpers import get_dict_from_click_args, DotMap, get_config_in_dot_notation, main_timer, write_sbtach_file, get_firstFreq, get_basename_from_path, get_optimal_taskNo_cpu_mem, SEPERATOR
+import frocc
 
 <<<<<<< Updated upstream
 os.environ['LC_ALL'] = "C.UTF-8"
@@ -42,7 +42,7 @@ logging.basicConfig(
 )
 
 FILEPATH_CONFIG_USER = "default_config.txt"
-PATH_PACKAGE = os.path.dirname(mightee_pol.__file__)  # helper
+PATH_PACKAGE = os.path.dirname(frocc.__file__)  # helper
 FILEPATH_CONFIG_TEMPLATE = ".default_config.template"
 FILEPATH_CONFIG_TEMPLATE_ORIGINAL = os.path.join(PATH_PACKAGE, FILEPATH_CONFIG_TEMPLATE)
 
@@ -125,7 +125,7 @@ def write_user_config_input(args):
     '''
     '''
     info(f"Writing user input to config file: {FILEPATH_CONFIG_USER}")
-    configString = "# This is the configuration file to initialise the mightee_pol cube generation.\n"
+    configString = "# This is the configuration file to initialise the frocc cube generation.\n"
     configString += "# Please change the parameters accordingly.\n\n"
     configString += f"# Default values are read from the template file {FILEPATH_CONFIG_TEMPLATE}.\n"
     configString += "# Parameters from the template file can be used in this file you are editing\n"
