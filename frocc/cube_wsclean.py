@@ -24,6 +24,7 @@ import subprocess as sp
 from radio_beam import Beam, Beams
 from astropy.io import fits
 from astropy import units
+import time
 
 import click
 
@@ -782,6 +783,9 @@ def call_wsclean(inputMS, conf, use_mpi=False):
     command = wsclean(
         mslist=inputMS,
         use_mpi=use_mpi,
+        j=conf.input.threads,
+        parallel_reordering=conf.input.threads,
+        parallel_gridding=conf.input.threads,
         name=prefix,
         pol=conf.input.stokes,
         verbose=True,
@@ -800,10 +804,16 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         log_time=conf.input.log_time,
         temp_dir=conf.env.dirImages,
         mem=conf.input.mem,
-        parallel_deconvolution=conf.input.imsize // conf.input.parallel_deconvolution_cells,
+        parallel_deconvolution=conf.input.imsize // conf.input.threads,
     )
-    info(f"WSClean command: {command}")
+    info(f"wsclean command: {command}")
     sp.run(command.split())
+
+    info("wsclean finished")
+    if use_mpi:
+        info("Sleeping for 30 seconds to allow MPI to finish")
+        time.sleep(30)
+        info("Awake")
 
     # export to .fits file
     ext = "-image.fits"

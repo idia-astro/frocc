@@ -265,7 +265,7 @@ def write_all_sbatch_files(conf):
         'ntasks': f"{slurmArrayLength}",
         'nodes': f"{slurmArrayLength}",
         'job-name': basename,
-        'cpus-per-task': tcleanSlurm['cpu'],
+        'cpus-per-task': conf.input.threads,
         'mem': str(tcleanSlurm['mem']) + "GB",
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",

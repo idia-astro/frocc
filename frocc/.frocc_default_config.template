@@ -220,6 +220,12 @@ log_time = True
 # EXAMPLE: 99
 mem = 90
 
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+threads = 1
+
 # =============================================================================
 # imsmooth
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
@@ -230,6 +236,7 @@ mem = 90
 # will fail with "Unable to reach target resolution ..."
 # TYPE: string
 # EXAMPLE: "15arcsec" or "12arcsec,13arcsec" or empty string "" for no smoothing
+# or "auto" for automatic smoothing
 smoothbeam = ""
 
 
