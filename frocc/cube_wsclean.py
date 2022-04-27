@@ -839,29 +839,30 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         else:
             major = conf.input.smoothbeam
             minor = conf.input.smoothbeam
-        outImageName = fitsname.replace(".fits", "")
-        outSmoothedName = outImageName + ".smoothed"
-        outSmoothedFits = outSmoothedName + ".fits"
+        for fitsname in fitsnames:
+            outImageName = fitsname.replace(".fits", "")
+            outSmoothedName = outImageName + ".smoothed"
+            outSmoothedFits = outSmoothedName + ".fits"
 
-        info(f"Importing: {fitsname}")
-        casatasks.importfits(
-            fitsimage=fitsname, imagename=outImageName,
-        )
+            info(f"Importing: {fitsname}")
+            casatasks.importfits(
+                fitsimage=fitsname, imagename=outImageName,
+            )
 
-        casatasks.imsmooth(
-            imagename=outImageName,
-            outfile=outSmoothedName,
-            targetres=True,
-            kernel="gauss",
-            major=major,
-            minor=minor,
-            pa="0deg",
-            overwrite=True,
-        )
-        info(f"Exporting: {outSmoothedFits}")
-        casatasks.exportfits(
-            imagename=outSmoothedName, fitsimage=outSmoothedFits, overwrite=True
-        )
+            casatasks.imsmooth(
+                imagename=outImageName,
+                outfile=outSmoothedName,
+                targetres=True,
+                kernel="gauss",
+                major=major,
+                minor=minor,
+                pa="0deg",
+                overwrite=True,
+            )
+            info(f"Exporting: {outSmoothedFits}")
+            casatasks.exportfits(
+                imagename=outSmoothedName, fitsimage=outSmoothedFits, overwrite=True
+            )
 
 
 def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
