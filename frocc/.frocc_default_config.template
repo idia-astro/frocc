@@ -168,6 +168,59 @@ restoration = True
 restoringbeam = ""
 
 # =============================================================================
+# wsclean options
+# For detailed help, check the WSClean website: https://wsclean.readthedocs.io/ .
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 100
+nchan = 1
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+join_polarizations = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+join_channels = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+squared_channel_joining = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+automask = 3
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+auto_threshold = 1
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+use_wgridder = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+log_time = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: float
+# EXAMPLE: 99
+mem = 90
+
+# =============================================================================
 # imsmooth
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
 
@@ -194,7 +247,9 @@ dirHdf5Output = ""
 # DESCRIPTION: Scripts to run. Also used for sbatch dependency, therefore list
 # order matters!
 # TYPE: list(str)
-runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+# runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+runScripts = ["cube_wsclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+
 
 # DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
 # job-name, cpus-per-task may be overwritten by the pipline
