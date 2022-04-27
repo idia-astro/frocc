@@ -256,6 +256,28 @@ def write_all_sbatch_files(conf):
     command = conf.env.prefixSingularity + ' python3 ' + scriptPath + ' --slurmArrayTaskId ${SLURM_ARRAY_TASK_ID}'
     write_sbtach_file(filename, command, conf, sbatchDict)
 
+    # wsclean
+    slurmArrayLength = str(conf.input.nchan)
+    tcleanSlurm = get_optimal_taskNo_cpu_mem(conf)
+    basename = "cube_wsclean"
+    filename = basename + ".sbatch"
+    sbatchDict = {
+        'ntasks': f"{slurmArrayLength}",
+        'nodes': f"{slurmArrayLength}",
+        'job-name': basename,
+        'cpus-per-task': tcleanSlurm['cpu'],
+        'mem': str(tcleanSlurm['mem']) + "GB",
+        'output': f"logs/{basename}-%A-%a.out",
+        'error': f"logs/{basename}-%A-%a.err",
+        'time': "20:00:00",
+        }
+    if os.path.exists(basename + ".py"):
+        scriptPath =  basename + ".py"
+    else:
+        scriptPath =  os.path.join(PATH_PACKAGE, basename + ".py")
+    command = conf.env.prefixSingularity + ' python3 ' + scriptPath + ' --use_mpi'
+    write_sbtach_file(filename, command, conf, sbatchDict)
+
     # buildcube
     if conf.input.smoothbeam:
         noOfArrayTasks = 2
