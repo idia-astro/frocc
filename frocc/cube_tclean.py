@@ -116,22 +116,6 @@ def call_tclean(channelInputMS, channelNumber, conf):
     info(f"Exporting: {outImageFits}")
     casatasks.exportfits(imagename=outImageName, fitsimage=outImageFits, overwrite=True)
 
-    # Also create an smoothed image if conf.input.smoothbeam is truthy
-    if conf.input.smoothbeam:
-        outSmoothedName = outImageName + ".smoothed"
-        outSmoothedFits = outSmoothedName + ".fits"
-        if conf.input.smoothbeam.find(",") > 0:
-            major, minor = conf.input.smoothbeam.split(",")
-        else:
-            major = conf.input.smoothbeam
-            minor = conf.input.smoothbeam
-        casatasks.imsmooth(imagename=outImageName, outfile=outSmoothedName, targetres=True,
-                kernel='gauss', major=major,
-                minor=minor, pa='0deg',
-                overwrite=True)
-        info(f"Exporting: {outSmoothedFits}")
-        casatasks.exportfits(imagename=outSmoothedName, fitsimage=outSmoothedFits, overwrite=True)
-
 
 def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
     '''
