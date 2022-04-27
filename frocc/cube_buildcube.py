@@ -31,6 +31,9 @@ import sys
 import click
 import pandas as pd
 import seaborn as sns
+import casatasks
+from radio_beam import Beam, Beams
+from astropy import units
 
 import matplotlib as mpl
 mpl.use('Agg') # Backend that doesn't need X server
@@ -58,6 +61,68 @@ mpl.rcParams['axes.titlesize'] = 26
 sns.set_style("ticks")
 # SETTINGS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+def smoother(fitsnames, conf):
+    """Smooth channel images to common resolution
+
+    Args:
+        fitsnames (list): List of fits files to be smoothed
+        conf (config): Config object
+
+    Returns:
+        list: List of smoothed fits files
+    """    
+    if conf.input.smoothbeam == "auto":
+        beam_list = []
+        for fitsname in fitsnames:
+            header = fits.getheader(fitsname)
+            beam = Beam.from_fits.header(header)
+            beam_list.append(beam)
+        beams = Beams(
+            major=np.array([b.major.to(units.deg).value for b in beam_list])
+            * units.deg,
+            minor=np.array([b.minor.to(units.deg).value for b in beam_list])
+            * units.deg,
+            pa=np.array([b.pa.to(units.deg).value for b in beam_list]) * units.deg,
+        )
+        common_beam = beams.common_beam()
+        major = f"{common_beam.major.to(units.arcsec).value}arcsec"
+        minor = f"{common_beam.minor.to(units.arcsec).value}arcsec"
+    elif conf.input.smoothbeam.find(",") > 0:
+        major, minor = conf.input.smoothbeam.split(",")
+    else:
+        major = conf.input.smoothbeam
+        minor = conf.input.smoothbeam
+    
+    outSmoothedFitsNames = []
+    for fitsname in fitsnames:
+        outImageName = fitsname.replace(".fits", "")
+        outSmoothedName = outImageName + ".smoothed"
+        outSmoothedFits = outSmoothedName + ".fits"
+
+        info(f"Importing: {fitsname}")
+        casatasks.importfits(
+            fitsimage=fitsname, imagename=outImageName,
+        )
+
+        casatasks.imsmooth(
+            imagename=outImageName,
+            outfile=outSmoothedName,
+            targetres=True,
+            kernel="gauss",
+            major=major,
+            minor=minor,
+            pa="0deg",
+            overwrite=True,
+        )
+        info(f"Exporting: {outSmoothedFits}")
+        casatasks.exportfits(
+            imagename=outSmoothedName, 
+            fitsimage=outSmoothedFits, 
+            overwrite=True
+        )
+        outSmoothedFitsNames.append(outSmoothedFits)
+    return outSmoothedFitsNames
+
 
 def second_order_poly(x, coeffs):
     #y = a*x**2 + b*x + c
@@ -89,15 +154,15 @@ def get_correction_coefficients(conf, obsid):
 
 
 
-def get_and_add_custom_header(header, zdim, conf, mode="normal"):
+def get_and_add_custom_header(lowestChannelFitsfile):
     """
     Gets header from fits file and updates the cube header.
 
 
     Parameters
     ----------
-    header: astroy.io.fits header
-       The header class that gets updated
+    lowestChannelFitsfile: str
+       Lowest channel fits filename
 
     Returns
     -------
@@ -106,18 +171,10 @@ def get_and_add_custom_header(header, zdim, conf, mode="normal"):
 
     """
     info(SEPERATOR)
-    if mode == "smoothed":
-        lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))[0]
-    else:
-        lowestChannelFitsfile = sorted(glob(conf.env.dirImages + "*image.fits"))[0]
 
     info("Getting header for data cube from: %s", lowestChannelFitsfile)
     with fits.open(lowestChannelFitsfile, memmap=True) as hud:
         header = hud[0].header
-    #    # Optional: Update the header.
-    #    header["OBJECT"] = str(conf.data.field)
-    #    header["NAXIS3"] = int(zdim)
-    #    header["CTYPE3"] = ("FREQ", "")
     return header
 
 def get_cropped_size_in_px(conf):
@@ -156,7 +213,8 @@ def make_empty_image(conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
+        oldChannelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+        channelFitsfileList = smoother(oldChannelFitsfileList, conf)
     else:
         channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
         
@@ -202,7 +260,7 @@ def make_empty_image(conf, mode="normal"):
     hdu = fits.PrimaryHDU(data=dummy_data)
 
     header = hdu.header
-    header = get_and_add_custom_header(header, zdim, conf, mode=mode)
+    header = get_and_add_custom_header(lowestChannelFitsfile)
     for i, dim in enumerate(dims, 1):
         header["NAXIS%d" % i] = dim
         info(header["CRPIX1"])
@@ -233,6 +291,7 @@ def make_empty_image(conf, mode="normal"):
     with open(cubeName, "rb+") as f:
         f.seek(header_size + data_size - 1)
         f.write(b"\0")
+    return channelFitsfileList
 
 
 
@@ -343,7 +402,7 @@ def get_cropped_numpy_plane(conf, plane):
     return plane
 
 
-def fill_cube_with_images(conf, mode="normal"):
+def fill_cube_with_images(channelFitsfileList, conf, mode="normal"):
     """
     Fills the empty data cube with fits data.
 
@@ -370,10 +429,6 @@ def fill_cube_with_images(conf, mode="normal"):
     rmsDict["flagged"] = []
     rmsDict["polAngleCorr"] = []
     rmsDict["xyPhaseCorr"] = []
-    if mode == "smoothed":
-        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.smoothed.fits"))
-    else:
-        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
     maxChanNo =  int(get_channelNumber_from_filename(channelFitsfileList[-1], conf.env.markerChannel))
     for ii in range(0, maxChanNo):
         rmsDict['chanNo'].append(ii + 1)
@@ -515,16 +570,16 @@ def main(ctx):
 
     # exploit slurm task ID to run normal buildcube or smoothed buildcube
     if int(args.slurmArrayTaskId) == 1:
-        make_empty_image(conf, mode="normal")
-        fill_cube_with_images(conf, mode="normal")
+        channelFitsfileList = make_empty_image(conf, mode="normal")
+        fill_cube_with_images(channelFitsfileList, conf, mode="normal")
 
     elif int(args.slurmArrayTaskId) == 2:
-        make_empty_image(conf, mode="smoothed")
-        fill_cube_with_images(conf, mode="smoothed")
+        channelFitsfileList = make_empty_image(conf, mode="smoothed")
+        fill_cube_with_images(channelFitsfileList, conf, mode="smoothed")
 
     else:
-        make_empty_image(conf, mode="normal")
-        fill_cube_with_images(conf, mode="normal")
+        channelFitsfileList = make_empty_image(conf, mode="normal")
+        fill_cube_with_images(channelFitsfileList, conf, mode="normal")
 
 
 
