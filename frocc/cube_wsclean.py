@@ -800,7 +800,7 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         log_time=conf.input.log_time,
         temp_dir=conf.env.dirImages,
         mem=conf.input.mem,
-        parallel_deconvolution=conf.input.imsize // 4,
+        parallel_deconvolution=conf.input.imsize // conf.input.parallel_deconvolution_cells,
     )
     info(f"WSClean command: {command}")
     sp.run(command.split())
