@@ -87,11 +87,14 @@ def smoother(fitsnames, conf):
         common_beam = beams.common_beam()
         major = f"{np.ceil(common_beam.major.to(units.arcsec).value)}arcsec"
         minor = f"{np.ceil(common_beam.minor.to(units.arcsec).value)}arcsec"
+        pa = f"{np.ceil(common_beam.pa.to(units.deg).value)}deg"
     elif conf.input.smoothbeam.find(",") > 0:
         major, minor = conf.input.smoothbeam.split(",")
+        pa = "0deg"
     else:
         major = conf.input.smoothbeam
         minor = conf.input.smoothbeam
+        pa = "0deg"
     
     outSmoothedFitsNames = []
     for fitsname in fitsnames:
@@ -113,7 +116,7 @@ def smoother(fitsnames, conf):
             kernel="gauss",
             major=major,
             minor=minor,
-            pa="0deg",
+            pa=pa,
             overwrite=True,
         )
         info(f"Exporting: {outSmoothedFits}")
