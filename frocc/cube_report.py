@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 #import seaborn as sns
 from astropy.io import fits
 import aplpy
-
+from casatasks import listobs
 
 from frocc.lhelpers import get_channelNumber_from_filename, get_config_in_dot_notation, get_std_via_mad, main_timer, change_channelNumber_from_filename,  SEPERATOR, get_lowest_channelNo_with_data_in_cube, update_fits_header_of_cube, DotMap, get_dict_from_click_args, calculate_channelFreq_from_header, read_file_as_string, write_file_from_string, get_timestamp, run_command_with_logging, get_dict_from_tabFile, get_lowest_channelIdx_and_freq_with_data_in_cube
 from frocc.check_output import print_output
@@ -197,8 +197,7 @@ def write_listobs_for_inputMS_and_get_filenames(conf):
         outFile = os.path.join(conf.env.dirReport, os.path.basename(os.path.splitext(inputMS)[0]) + conf.env.extShortListobs)
         filenameList.append(outFile)
         info(f"Writing file: {outFile}")
-        command = f"{conf.env.commandCasa5} \"listobs(vis='{inputMS}', listfile='{outFile}', overwrite=True, verbose=False)\""
-        run_command_with_logging(command)
+        _ = listobs(vis=inputMS, listfile=outFile, overwrite=True, verbose=False)
     return filenameList
 
 
