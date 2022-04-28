@@ -262,10 +262,10 @@ def write_all_sbatch_files(conf):
     basename = "cube_wsclean"
     filename = basename + ".sbatch"
     sbatchDict = {
-        'ntasks': f"{slurmArrayLength}",
-        'nodes': f"{slurmArrayLength}",
+        'ntasks': f"{conf.input.nchan}" if conf.input.nchan < conf.env.maxSimultaniousNodes else f"{conf.env.maxSimultaniousNodes}",
+        'nodes': f"{conf.input.nchan}" if conf.input.nchan < conf.env.maxSimultaniousNodes else f"{conf.env.maxSimultaniousNodes}",
         'job-name': basename,
-        'cpus-per-task': conf.input.threads,
+        'cpus-per-task': f"{conf.input.threads}" if conf.input.threads < conf.env.tcleanMaxCpuCores else f"{conf.env.tcleanMaxCpuCores}",
         'mem': str(tcleanSlurm['mem']) + "GB",
         'output': f"logs/{basename}-%A-%a.out",
         'error': f"logs/{basename}-%A-%a.err",
