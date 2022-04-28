@@ -817,14 +817,25 @@ def call_wsclean(inputMS, conf, use_mpi=False):
 
     # export to .fits file
     ext = "-image.fits"
-    fitsnames = []
-    for s in conf.input.stokes:
-        for c in range(conf.input.nchan):
+
+    stokes = conf.input.stokes
+    nchan = conf.input.nchan
+
+    for c in range(nchan):
+        stack = {}
+        for s in stokes:
             fitsname = f"{prefix}-{c:04d}-{s}{ext}"
-        if os.path.exists(fitsname):
-            info(f"wsclean image file found: {fitsname}")
-        else:
-            error(f"wsclean image file not found: {fitsname}")
+            if os.path.exists(fitsname):
+                info(f"wsclean image file found: {fitsname}")
+            else:
+                error(f"wsclean image file not found: {fitsname}")
+            stack.update({s:fitsname})
+        head = fits.getheader(stack[stokes[0]])
+        data = np.concatenate([fits.getdata(stack[s]) for s in stokes])
+        # Make a casa-compatible fits file
+        casaname = f"{prefix}.chan{c:03d}.image.fits"
+        info(f"Writing casa-compatible fits file: {casaname}")
+        fits.writeto(casaname, data, head, overwrite=True)
 
 
 def get_channelNumber_from_slurmArrayTaskId(slurmArrayTaskId, conf):
