@@ -15,6 +15,7 @@ dependencies:
 - pandas
 - jinja2
 - pandoc
+- aplpy
 - pip:
   - casatasks
   - requests
