@@ -75,7 +75,7 @@ def smoother(fitsnames, conf):
         beam_list = []
         for fitsname in fitsnames:
             header = fits.getheader(fitsname)
-            beam = Beam.from_fits.header(header)
+            beam = Beam.from_fits_header(header)
             beam_list.append(beam)
         beams = Beams(
             major=np.array([b.major.to(units.deg).value for b in beam_list])
@@ -85,8 +85,8 @@ def smoother(fitsnames, conf):
             pa=np.array([b.pa.to(units.deg).value for b in beam_list]) * units.deg,
         )
         common_beam = beams.common_beam()
-        major = f"{common_beam.major.to(units.arcsec).value}arcsec"
-        minor = f"{common_beam.minor.to(units.arcsec).value}arcsec"
+        major = f"{np.ceil(common_beam.major.to(units.arcsec).value)}arcsec"
+        minor = f"{np.ceil(common_beam.minor.to(units.arcsec).value)}arcsec"
     elif conf.input.smoothbeam.find(",") > 0:
         major, minor = conf.input.smoothbeam.split(",")
     else:
@@ -101,7 +101,9 @@ def smoother(fitsnames, conf):
 
         info(f"Importing: {fitsname}")
         casatasks.importfits(
-            fitsimage=fitsname, imagename=outImageName,
+            fitsimage=fitsname, 
+            imagename=outImageName,
+            overwrite=True,
         )
 
         casatasks.imsmooth(
@@ -213,10 +215,10 @@ def make_empty_image(conf, mode="normal"):
 
     """
     if mode == "smoothed":
-        oldChannelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+        oldChannelFitsfileList = sorted(glob(conf.env.dirImages + "*.chan*image.fits"))
         channelFitsfileList = smoother(oldChannelFitsfileList, conf)
     else:
-        channelFitsfileList = sorted(glob(conf.env.dirImages + "*image.fits"))
+        channelFitsfileList = sorted(glob(conf.env.dirImages + "*.chan*image.fits"))
         
     lowestChannelFitsfile = channelFitsfileList[0]
     highestChannelFitsfile = channelFitsfileList[-1]
