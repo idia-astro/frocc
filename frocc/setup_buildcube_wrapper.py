@@ -33,7 +33,10 @@ from frocc.setup_buildcube import write_all_sbatch_files, copy_runscripts
 
 # TODO: put this in default_config.* at a later stage
 #PREFIX_SINGULARITY = "srun --qos qos-interactive --nodes=1 --ntasks=1 --time=10 --mem=20GB --partition=Main singularity exec /idia/software/containers/casa-6.simg python3 $HOME/.local/bin/setup_buildcube "
-PREFIX_SRUN = "srun -N 1 --export=ALL --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 2 --time 00:30:00 --pty"
+#PREFIX_SRUN = "srun -N 1 --export=ALL --preserve-env --mem 20G --ntasks-per-node 1 --cpus-per-task 2 --time 00:30:00 --pty"
+
+PREFIX_SRUN = "srun --export=ALL --preserve-env -p Devel --mem=0 --time=12:00:00 --pty"
+
 #PREFIX_SINGULARITY = "srun --qos qos-interactive -N 1 --mem 20G --ntasks-per-node 1 --cpus-per-task 4 --time 1:00:00 --pty singularity exec /data/exp_soft/containers/casa-6.simg"
 #COMMAND = "python3 " + expanduser('~') + "/.local/bin/setup_buildcube"
 #COMMAND = "setup_buildcube"
