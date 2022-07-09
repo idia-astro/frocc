@@ -171,11 +171,14 @@ def get_unflagged_channelIndexBoolList(conf, msIdx):
 
 
 def get_unflagged_channelList(conf, msIdx):
-    channelList = []
-    channelIndexBoolList = get_unflagged_channelIndexBoolList(conf, msIdx)
-    for i, channelBool in enumerate(channelIndexBoolList):
-        if channelBool:
-            channelList.append(i + 1)
+    if conf.input.nchan is None:
+        channelList = []
+        channelIndexBoolList = get_unflagged_channelIndexBoolList(conf, msIdx)
+        for i, channelBool in enumerate(channelIndexBoolList):
+            if channelBool:
+                channelList.append(i + 1)
+    else:
+        channelList = list(range(conf.input.nchan))
     return channelList
 
 
@@ -336,6 +339,19 @@ def write_all_sbatch_files(conf):
     tcleanSlurm = get_optimal_taskNo_cpu_mem(conf)
     basename = "cube_wsclean"
     filename = basename + ".sbatch"
+    n_cpus = conf.input.threads \
+            if conf.input.threads < conf.env.tcleanMaxCpuCores \
+            else conf.env.tcleanMaxCpuCores
+
+    mem_per_cpu = (
+        conf.env.tcleanMaxMemory - conf.env.tcleanMinMemory
+        ) / (
+            conf.env.tcleanMaxCpuCores - conf.env.tcleanMinCpuCores
+        )
+    mem = mem_per_cpu * n_cpus \
+        if (mem_per_cpu * n_cpus) < conf.env.tcleanMaxMemory \
+            else conf.env.tcleanMaxMemory 
+
     sbatchDict = {
         "ntasks": f"{conf.input.nchan}"
         if conf.input.nchan < conf.env.maxSimultaniousNodes
@@ -344,13 +360,11 @@ def write_all_sbatch_files(conf):
         if conf.input.nchan < conf.env.maxSimultaniousNodes
         else f"{conf.env.maxSimultaniousNodes}",
         "job-name": basename,
-        "cpus-per-task": f"{conf.input.threads}"
-        if conf.input.threads < conf.env.tcleanMaxCpuCores
-        else f"{conf.env.tcleanMaxCpuCores}",
-        "mem": str(tcleanSlurm["mem"]) + "GB",
+        "cpus-per-task": f"{n_cpus}" ,
+        "mem": f"{int(mem)}GB",
         "output": f"logs/{basename}-%A-%a.out",
         "error": f"logs/{basename}-%A-%a.err",
-        "time": "20:00:00",
+        "time": "3-00:00:00",
     }
     if os.path.exists(basename + ".py"):
         scriptPath = basename + ".py"
@@ -620,7 +634,7 @@ def main(ctx):
         )
         for runScript in conf.input.runScripts[1:]:
             sbatchScript = runScript.replace(".py", ".sbatch")
-            command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterany:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo "
+            command += f"$SLURMID;SLURMID=$(sbatch --dependency=afterok:$SLURMID {sbatchScript} | cut -d ' ' -f4) && echo "
         command += "$SLURMID && echo Slurm jobs submitted!"
         info(f"Slurm command: {command}")
         sbatchResult = subprocess.run(
