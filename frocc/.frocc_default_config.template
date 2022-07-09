@@ -3,7 +3,7 @@
 # Default config template file
 # ----------------------------
 #
-# This file serves as config file for sane defaults for the MeerKAT MIGHTEE 
+# This file serves as config file for sane defaults for the MeerKAT MIGHTEE
 # polarisation pipeline. The values in this file should not be edited. Instead
 # every value can be overwritten in `frocc_default_config.txt` (after
 # creating it via `frocc --createConfig --inputMS <path to input.ms>`).
@@ -50,7 +50,7 @@ outputChanBandwidth = 3e6
 # EXAMPLE: 0 or "" for all observations
 observation = ""
 
-# DESCRIPTION: File for the XY-phase and polarisation angle corrections. 
+# DESCRIPTION: File for the XY-phase and polarisation angle corrections.
 # coefficient units must be given in [GHz]
 # TYPE: str (path to coefficient file)
 # EXAMPLE: "coefficients.txt" TODO give example of file format.
@@ -225,6 +225,21 @@ mem = 90
 # TYPE: int
 # EXAMPLE: 1
 threads = 1
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+iuwt = False
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+multiscale = False
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: float
+multiscale_scale_bias = 0.7
 
 # =============================================================================
 # imsmooth
