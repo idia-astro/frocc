@@ -808,6 +808,7 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         iuwt=conf.input.iuwt,
         multiscale=conf.input.multiscale,
         multiscale_scale_bias=conf.input.multiscale_scale_bias,
+        deconvolution_threads=conf.input.deconvolution_threads,
     )
     info(f"wsclean command: {command}")
     sp.run(command.split())

@@ -241,6 +241,11 @@ multiscale = False
 # TYPE: float
 multiscale_scale_bias = 0.7
 
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+deconvolution_threads = 1
+
 # =============================================================================
 # imsmooth
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
