@@ -226,7 +226,7 @@ def get_lastFreq(conf):
     return firstFreq
 
 def get_chanNumbers(first_freq, last_freq, conf):
-    ms = conf.input.ms[0]
+    ms = conf.input.inputMS[0]
     # Get channel number from MS using CASA
     t_spec_window = table(f"{ms}/SPECTRAL_WINDOW")
     freqs_lo = t_spec_window[0]["CHAN_FREQ"]
