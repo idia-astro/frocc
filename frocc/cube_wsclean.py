@@ -36,8 +36,10 @@ from frocc.lhelpers import (
     DotMap,
     get_config_in_dot_notation,
     get_firstFreq,
+    get_lastFreq,
     SEPERATOR,
     SEPERATOR_HEAVY,
+    get_chanNumbers
 )
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -777,11 +779,16 @@ def call_wsclean(inputMS, conf, use_mpi=False):
     """
     """
     info(f"Starting wsclean for input files: {inputMS}")
+    first_freq = get_firstFreq(conf)
+    last_freq = get_lastFreq(conf)
+    first_chan, last_chan = get_chanNumbers(first_freq, last_freq, conf)
+
     # info(f"Setting output filename base to: {conf.input.basename + conf.env.markerChannel + channelNumber}")
     # imagename = os.path.join(conf.env.dirImages, conf.input.basename + conf.env.markerChannel + channelNumber)
     prefix = os.path.join(conf.env.dirImages, conf.input.basename)
     command = wsclean(
         mslist=inputMS,
+        channel_range=f"{first_chan} {last_chan}",
         use_mpi=use_mpi,
         j=conf.input.threads,
         parallel_reordering=conf.input.threads,
