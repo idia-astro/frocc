@@ -759,10 +759,16 @@ def wsclean(
     arguments = locals()
     mslist = arguments.pop("mslist")
     use_mpi = arguments.pop("use_mpi")
+    # Check for MPI
     if use_mpi:
         command = f"mpirun wsclean-mp"
     else:
         command = f"wsclean "
+
+    # Check for square channels and multiscale
+    if arguments["squared_channel_joining"] and arguments["multiscale"]:
+        info("CAUTION - square channel joining and multiscale is unstable!")
+
     for key, value in arguments.items():
         if type(value) is bool:
             if value:
@@ -782,7 +788,9 @@ def call_wsclean(inputMS, conf, use_mpi=False):
     first_freq = get_firstFreq(conf)
     last_freq = get_lastFreq(conf)
     first_chan, last_chan = get_chanNumbers(first_freq, last_freq, conf)
-
+    threads = conf.input.threads if conf.input.threads > 0 else None
+    # Check for multiscale
+    multiscale = conf.input.multiscale
     # info(f"Setting output filename base to: {conf.input.basename + conf.env.markerChannel + channelNumber}")
     # imagename = os.path.join(conf.env.dirImages, conf.input.basename + conf.env.markerChannel + channelNumber)
     prefix = os.path.join(conf.env.dirImages, conf.input.basename)
@@ -790,9 +798,9 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         mslist=inputMS,
         channel_range=f"{first_chan} {last_chan}",
         use_mpi=use_mpi,
-        j=conf.input.threads,
-        parallel_reordering=conf.input.threads,
-        parallel_gridding=conf.input.threads,
+        j=threads,
+        parallel_reordering=threads,
+        parallel_gridding=threads,
         name=prefix,
         pol=conf.input.stokes,
         verbose=True,
@@ -811,11 +819,10 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         log_time=conf.input.log_time,
         temp_dir=conf.env.dirImages,
         mem=conf.input.mem,
-        parallel_deconvolution=conf.input.imsize // int(np.floor(np.sqrt(conf.input.threads))),
+        parallel_deconvolution=conf.input.parallel_deconvolution if conf.input.parallel_deconvolution > 0 else None,
         iuwt=conf.input.iuwt,
-        multiscale=conf.input.multiscale,
-        multiscale_scale_bias=conf.input.multiscale_scale_bias,
-        deconvolution_threads=conf.input.deconvolution_threads,
+        multiscale=multiscale,
+        multiscale_scale_bias=conf.input.multiscale_scale_bias if multiscale else None,
     )
     info(f"wsclean command: {command}")
     sp.run(command.split())

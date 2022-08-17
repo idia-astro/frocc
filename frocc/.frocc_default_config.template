@@ -224,7 +224,13 @@ mem = 90
 # https://wsclean.readthedocs.io/
 # TYPE: int
 # EXAMPLE: 1
-threads = 1
+threads = 0
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+parallel_deconvolution = 0
 
 # DESCRIPTION:
 # https://wsclean.readthedocs.io/
@@ -241,10 +247,6 @@ multiscale = False
 # TYPE: float
 multiscale_scale_bias = 0.7
 
-# DESCRIPTION:
-# https://wsclean.readthedocs.io/
-# TYPE: int
-deconvolution_threads = 1
 
 # =============================================================================
 # imsmooth
