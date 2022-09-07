@@ -340,7 +340,7 @@ def write_all_sbatch_files(conf):
     basename = "cube_wsclean"
     filename = basename + ".sbatch"
     n_cpus = conf.input.threads \
-            if conf.input.threads < conf.env.tcleanMaxCpuCores \
+            if (conf.input.threads < conf.env.tcleanMaxCpuCores) and conf.input.threads > 0 \
             else conf.env.tcleanMaxCpuCores
 
     mem_per_cpu = (
@@ -350,7 +350,7 @@ def write_all_sbatch_files(conf):
         )
     mem = mem_per_cpu * n_cpus \
         if (mem_per_cpu * n_cpus) < conf.env.tcleanMaxMemory \
-            else conf.env.tcleanMaxMemory 
+            else conf.env.tcleanMaxMemory
 
     sbatchDict = {
         "ntasks": f"{conf.input.nchan}"
