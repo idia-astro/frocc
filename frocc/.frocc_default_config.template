@@ -296,7 +296,7 @@ apiUrl = "https://idia-api.lennartheino.de/v1/upload"
 envVarApikey = 'MEERKAT_POL_APIKEY'
 
 commandCasa5 = "casa --nogui --log2term -c "
-commandPandoc = "pandoc --latex-engine=xelatex --highlight-style=tango -o "
+commandPandoc = "pandoc --pdf-engine=xelatex --highlight-style=tango -o "
 extShortListobs = ".short-listobs.txt"
 extReportMD = ".report.md"
 extReportPdf = ".report.pdf"
