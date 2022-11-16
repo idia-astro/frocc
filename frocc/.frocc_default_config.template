@@ -247,6 +247,10 @@ multiscale = False
 # TYPE: float
 multiscale_scale_bias = 0.7
 
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: str
+temp_dir = ""
 
 # =============================================================================
 # imsmooth

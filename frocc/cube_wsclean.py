@@ -817,7 +817,7 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         use_wgridder=conf.input.use_wgridder,
         weight=f"briggs {conf.input.robust}",
         log_time=conf.input.log_time,
-        temp_dir=conf.env.dirImages,
+        temp_dir=conf.input.temp_dir,
         mem=conf.input.mem,
         parallel_deconvolution=conf.input.parallel_deconvolution if conf.input.parallel_deconvolution > 0 else None,
         iuwt=conf.input.iuwt,
@@ -825,7 +825,7 @@ def call_wsclean(inputMS, conf, use_mpi=False):
         multiscale_scale_bias=conf.input.multiscale_scale_bias if multiscale else None,
     )
     info(f"wsclean command: {command}")
-    sp.run(command.split())
+    sp.run(command, shell=True, check=True)
 
     info("wsclean finished")
     if use_mpi:
