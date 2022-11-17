@@ -103,7 +103,7 @@ README='''
  
  The last step `frocc --start` submits the slurm files in a dependency
  chain. Caution: CASA does not always seem to report back its failure state in
- a correct way. Therefore, the slurm flag `--dependency=afterany:...` is
+ a correct way. Therefore, the slurm flag `--dependency=afterok:...` is
  chosen, which starts the next job in the chain even if the previous one has
  failed.
  

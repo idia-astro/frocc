@@ -14,6 +14,7 @@ import inspect
 import subprocess
 import sys
 from astropy.io import fits
+from casacore.tables import table
 #from frocc.logger import info, debug, error, warning
 
 #import logging
@@ -162,10 +163,10 @@ def write_sbtach_file(filename, command, conf, sbatchDict={}):
             sbatchScript += "\n\ncat /etc/hostname"
             sbatchScript += "\nulimit -a"
             sbatchScript += "\n\necho users before and after running command:"
-            sbatchScript += "\nps aux | awk '{ print $1 }' | sed '1 d' | sort | uniq " 
+            sbatchScript += "\nps aux | awk '{ print $1 }' | sed '1 d' | sort | uniq "
             sbatchScript += "\n\n" + command
             sbatchScript += "\n\n"
-            sbatchScript += "\nps aux | awk '{ print $1 }' | sed '1 d' | sort | uniq " 
+            sbatchScript += "\nps aux | awk '{ print $1 }' | sed '1 d' | sort | uniq "
             f.write(sbatchScript)
 
 #write_sbtach_file("test.sbtach", "echo hi", {'job-name': "testestest", 'hi': 3})
@@ -219,6 +220,20 @@ def get_std_via_mad(npArray, axis=None):
 def get_firstFreq(conf):
     firstFreq = float(conf.input.freqRanges[0].split("-")[0]) * 1e6
     return firstFreq
+
+def get_lastFreq(conf):
+    firstFreq = float(conf.input.freqRanges[0].split("-")[1]) * 1e6
+    return firstFreq
+
+def get_chanNumbers(first_freq, last_freq, conf):
+    ms = conf.input.inputMS[0]
+    # Get channel number from MS using CASA
+    t_spec_window = table(f"{ms}/SPECTRAL_WINDOW")
+    freqs_lo = t_spec_window[0]["CHAN_FREQ"]
+    freqs_hi = t_spec_window[-1]["CHAN_FREQ"]
+    firstChanNumber = np.where(freqs_lo > first_freq)[0][0]
+    lastChanNumber = np.where(freqs_hi < last_freq)[0][-1]
+    return firstChanNumber, lastChanNumber
 
 def get_basename_from_path(filepath, withTimestamp=False):
     '''
@@ -300,7 +315,7 @@ def update_fits_header_of_cube(filepathCube, headerDict):
 def get_lowest_channelNo_with_data_in_cube(filepathCube):
     '''
     '''
-    info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
+    info(f"Getting lowest channel number which holds data in cube: {filepathCube}")
     with fits.open(filepathCube, memmap=True, mode="update") as hud:
         dataCube = hud[0].data
         maxIdx = hud[0].data.shape[1]
@@ -317,7 +332,7 @@ def get_lowest_channelNo_with_data_in_cube(filepathCube):
 def get_lowest_channelIdx_and_freq_with_data_in_cube(filepathCube, freqPower=1e-9):
     '''
     '''
-    info(f"Getting lowest channel number which holds data in cube: {filepathCube}") 
+    info(f"Getting lowest channel number which holds data in cube: {filepathCube}")
     dataDict = {}
 #        title = f"Preview: Cube with Stokes IQUV for channel {header['CRPIX3']} at {round(float(header['CRVAL3'])*1e-9,2)} GHz"
     with fits.open(filepathCube, memmap=True, mode="update") as hud:

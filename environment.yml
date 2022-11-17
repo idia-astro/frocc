@@ -9,7 +9,6 @@ dependencies:
 - numpy
 - scipy
 - matplotlib
-- casa-tools
 - seaborn
 - click
 - pandas
@@ -18,5 +17,7 @@ dependencies:
 - aplpy
 - pip:
   - casatasks
+  - casatools
+  - python-casacore
   - requests
   - -rrequirements.txt

@@ -3,7 +3,7 @@
 # Default config template file
 # ----------------------------
 #
-# This file serves as config file for sane defaults for the MeerKAT MIGHTEE 
+# This file serves as config file for sane defaults for the MeerKAT MIGHTEE
 # polarisation pipeline. The values in this file should not be edited. Instead
 # every value can be overwritten in `frocc_default_config.txt` (after
 # creating it via `frocc --createConfig --inputMS <path to input.ms>`).
@@ -50,7 +50,7 @@ outputChanBandwidth = 3e6
 # EXAMPLE: 0 or "" for all observations
 observation = ""
 
-# DESCRIPTION: File for the XY-phase and polarisation angle corrections. 
+# DESCRIPTION: File for the XY-phase and polarisation angle corrections.
 # coefficient units must be given in [GHz]
 # TYPE: str (path to coefficient file)
 # EXAMPLE: "coefficients.txt" TODO give example of file format.
@@ -168,6 +168,91 @@ restoration = True
 restoringbeam = ""
 
 # =============================================================================
+# wsclean options
+# For detailed help, check the WSClean website: https://wsclean.readthedocs.io/ .
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 100
+nchan = 1
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+join_polarizations = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+join_channels = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+squared_channel_joining = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+automask = 3
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+auto_threshold = 1
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+use_wgridder = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+log_time = True
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: float
+# EXAMPLE: 99
+mem = 90
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+threads = 0
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: int
+# EXAMPLE: 1
+parallel_deconvolution = 0
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+iuwt = False
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: bool
+multiscale = False
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: float
+multiscale_scale_bias = 0.7
+
+# DESCRIPTION:
+# https://wsclean.readthedocs.io/
+# TYPE: str
+temp_dir = ""
+
+# =============================================================================
 # imsmooth
 # https://casa.nrao.edu/docs/TaskRef/imsmooth-task.html
 
@@ -177,6 +262,7 @@ restoringbeam = ""
 # will fail with "Unable to reach target resolution ..."
 # TYPE: string
 # EXAMPLE: "15arcsec" or "12arcsec,13arcsec" or empty string "" for no smoothing
+# or "auto" for automatic smoothing
 smoothbeam = ""
 
 
@@ -194,7 +280,9 @@ dirHdf5Output = ""
 # DESCRIPTION: Scripts to run. Also used for sbatch dependency, therefore list
 # order matters!
 # TYPE: list(str)
-runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+# runScripts = ["cube_split.py", "cube_tclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+runScripts = ["cube_wsclean.py", "cube_buildcube.py", "cube_ior_flagging.py", "cube_average_map.py", "cube_report.py", "cube_cleanup.py"]
+
 
 # DESCRIPTION: Slurm sbatch defaults dictionary. Values like array, mem,
 # job-name, cpus-per-task may be overwritten by the pipline
